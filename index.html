@@ -1452,19 +1452,33 @@
                                             }}
                                         />
                                     </div>
-                                    <div className="text-right pr-2 md:pr-2 pointer-events-auto mt-1 w-full" style={{ position: 'relative', right: '0' }}>
-                                        <p className="text-zinc-400 text-[10px] md:text-xs font-light tracking-wider whitespace-nowrap inline-block">
+                                    <div className="text-right pointer-events-auto mt-1" style={{ 
+                                        position: 'relative', 
+                                        right: '0',
+                                        paddingRight: 'clamp(0.5rem, 2vw, 1rem)',
+                                        width: '100%',
+                                        maxWidth: '100%',
+                                        overflow: 'visible',
+                                        boxSizing: 'border-box'
+                                    }}>
+                                        <p className="text-zinc-400 text-[10px] md:text-xs font-light tracking-wider whitespace-nowrap inline-block" style={{
+                                            maxWidth: 'calc(100% - 1rem)',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>
                                             <span>陳宥緯</span> <span className="text-zinc-600 mx-1">|</span> <span className="text-zinc-500 uppercase">OWEN</span>
                                         </p>
                                     </div>
                                 </div>
                                 
                                 <div className="relative z-10 md:mt-0 mt-8">
-                                    <p className="text-zinc-500 font-mono text-[10px] md:text-[9px] mb-4 md:mb-8 tracking-[0.4em] uppercase whitespace-nowrap md:max-w-[10vw] max-w-full" style={{ width: 'fit-content', fontSize: 'clamp(10px, 1vw, 12px)' }}>Vibe Coder / Forward-Thinking</p>
-                                <h1 className="text-[10vw] md:text-[8vw] font-light tracking-tighter leading-[0.8] mb-4 md:mb-6">
+                                    <p className="text-zinc-500 font-mono text-[10px] md:text-[9px] mb-4 md:mb-8 tracking-[0.4em] uppercase whitespace-nowrap md:max-w-[10vw] w-[10vw] md:w-fit" style={{ 
+                                        fontSize: 'clamp(10px, 1vw, 12px)'
+                                    }}>Vibe Coder / Forward-Thinking</p>
+                                    <h1 className="text-[10vw] md:text-[8vw] font-light tracking-tighter leading-[0.8] mb-4 md:mb-6">
                                         <span className="inline-block">MAKING</span> <br />
                                         <span className="font-serif italic font-normal text-zinc-500 text-[11vw] md:text-[9vw] inline-block" style={{ marginLeft: '0.28em', marginTop: '-0.08em' }}>Impact.</span>
-                                </h1>
+                                    </h1>
                                     <div className="flex items-center gap-4 md:gap-8">
                                         <div className="h-px w-12 md:w-20 bg-zinc-700" />
                                         <p className="max-w-md text-zinc-500 text-xs md:text-sm leading-relaxed">跨越數據分析與流程自動化，將深層邏輯重塑為推動專案成功的實質影響。</p>
@@ -1472,7 +1486,7 @@
                                 </div>
                             </section>
 
-                            <section id="projects" className="mb-4 mt-4 relative overflow-visible">
+                            <section id="projects" className="mb-4 mt-2 md:mt-4 relative overflow-visible">
                                 <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
                                 {/* 裝飾性元素 */}
                                 <div className="absolute top-8 right-8 w-32 h-32 border border-white/5 rounded-full opacity-20"></div>
@@ -1486,7 +1500,7 @@
                                 }}></div>
                                 <div 
                                     onClick={() => setActiveProjectModal(true)} 
-                                    className="group relative cursor-pointer border border-white/10 rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-white/[0.02] to-white/[0.005] hover:from-white/[0.05] hover:to-white/[0.02] transition-all duration-700 mt-8 backdrop-blur-sm shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-[0_12px_48px_0_rgba(255,255,255,0.1)]"
+                                    className="group relative cursor-pointer border border-white/10 rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-white/[0.02] to-white/[0.005] hover:from-white/[0.05] hover:to-white/[0.02] transition-all duration-700 mt-4 md:mt-8 backdrop-blur-sm shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-[0_12px_48px_0_rgba(255,255,255,0.1)]"
                                     style={{
                                         position: 'relative',
                                         isolation: 'isolate'
