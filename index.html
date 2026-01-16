@@ -22,7 +22,7 @@
             background-color: #000; 
             color: #e5e5e5; 
             margin: 0;
-            overflow: hidden; /* 初始禁止捲動 */
+            overflow: hidden;
             font-family: 'Inter', sans-serif;
         }
 
@@ -68,79 +68,140 @@
         const { motion, AnimatePresence, useScroll, useSpring } = window.Motion;
 
         const App = () => {
-            const [stage, setStage] = useState('loading'); // loading -> ready -> intro3d -> web
-            const [loadingProgress, setLoadingProgress] = useState(0);
+            const [stage, setStage] = useState('intro3d');
+            const [waitingStart, setWaitingStart] = useState(true);
             const [activeProjectModal, setActiveProjectModal] = useState(false);
+            const [activeProjectView, setActiveProjectView] = useState(null);
             const [activeExpModal, setActiveExpModal] = useState(null);
             const [activeCertModal, setActiveCertModal] = useState(null);
 
-            // Three.js Refs
-            const threeInstance = useRef({ scene: null, camera: null, renderer: null, tv: null, remote: null });
+            const threeInstance = useRef({ scene: null, camera: null, renderer: null, tv: null, noiseCanvas: null, noiseTex: null, noiseCtx: null, staticActive: false });
+            const staticCanvasRef = useRef(null);
+            const staticAnimRef = useRef(null);
+            const staticCtxRef = useRef(null);
 
             useEffect(() => {
                 const container = document.getElementById('canvas-container');
                 const scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x050505);
-                
+                scene.background = new THREE.Color(0x050608);
                 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                camera.position.set(-5, 3, 8);
-                camera.lookAt(0, 1, 0);
-
+                camera.position.set(0, 2.5, 6.8);
+                camera.lookAt(-0.8, 1.5, 0.3);
                 const renderer = new THREE.WebGLRenderer({ antialias: true });
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 renderer.setPixelRatio(window.devicePixelRatio);
                 container.appendChild(renderer.domElement);
-
                 scene.add(new THREE.AmbientLight(0xffffff, 0.2));
-                const pLight = new THREE.PointLight(0x3366ff, 1, 10);
-                pLight.position.set(2, 3, 2);
-                scene.add(pLight);
-
-                const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-                floor.rotation.x = -Math.PI / 2;
-                scene.add(floor);
-
-                const sofa = new THREE.Group();
-                const seat = new THREE.Mesh(new THREE.BoxGeometry(3, 0.8, 1.5), new THREE.MeshStandardMaterial({ color: 0x222222 }));
-                seat.position.y = 0.4;
-                const back = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 0.4), new THREE.MeshStandardMaterial({ color: 0x222222 }));
-                back.position.set(0, 1, -0.6);
-                sofa.add(seat, back);
-                sofa.position.set(0, 0, 4);
-                scene.add(sofa);
-
-                const person = new THREE.Group();
-                person.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 1), new THREE.MeshStandardMaterial({ color: 0x0a0a0a })));
-                const head = new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
-                head.position.y = 0.7;
-                person.add(head);
-                person.position.set(0, 1, 4.2);
-                scene.add(person);
-
                 const tv = new THREE.Group();
                 const frame = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2, 0.1), new THREE.MeshStandardMaterial({ color: 0x000000 }));
                 const screen = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.8), new THREE.MeshBasicMaterial({ color: 0x000000 }));
                 screen.position.z = 0.06;
                 screen.name = "screen";
                 tv.add(frame, screen);
-                tv.position.set(0, 1.5, 0);
+                tv.position.set(-0.8, 1.5, 0.3);
                 scene.add(tv);
-
-                const remote = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.2), new THREE.MeshStandardMaterial({ color: 0x000000 }));
-                remote.position.set(0.4, 1.2, 4.5);
-                scene.add(remote);
-
-                threeInstance.current = { scene, camera, renderer, tv, remote };
-
+                const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.9, metalness: 0.0 }));
+                floor.rotation.x = -Math.PI / 2;
+                scene.add(floor);
+                const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(20, 10), new THREE.MeshStandardMaterial({ color: 0xead59e }));
+                wallBack.position.set(0, 2.5, -1);
+                wallBack.rotation.y = Math.PI;
+                scene.add(wallBack);
+                const rug = new THREE.Mesh(new THREE.PlaneGeometry(6, 3.5), new THREE.MeshStandardMaterial({ color: 0x5ec6e8 }));
+                rug.rotation.x = -Math.PI / 2;
+                rug.position.set(0, 0.01, 3.2);
+                scene.add(rug);
+                const teaWood = new THREE.MeshStandardMaterial({ color: 0x7a4a2a, roughness: 0.8 });
+                const teaTable = new THREE.Group();
+                const teaTop = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.06, 24), teaWood);
+                const teaPedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 16), teaWood);
+                teaTop.position.y = 0;
+                teaPedestal.position.y = -0.25;
+                teaTable.add(teaTop, teaPedestal);
+                teaTable.position.set(-0.2, 0.52, 3.0);
+                scene.add(teaTable);
+                const matBase = new THREE.MeshStandardMaterial({ color: 0x2b5d3b, roughness: 0.7, metalness: 0.0 });
+                const matCushion = new THREE.MeshStandardMaterial({ color: 0x3c6e47, roughness: 0.75, metalness: 0.0 });
+                const matWood = new THREE.MeshStandardMaterial({ color: 0x7a4a2a, roughness: 0.8 });
+                const sofa = new THREE.Group();
+                const seatBase = new THREE.Mesh(new THREE.BoxGeometry(3.05, 0.35, 1.45), matBase);
+                seatBase.position.y = 0.35;
+                const cushionL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.28, 1.4), matCushion);
+                cushionL.position.set(-0.77, 0.62, 0);
+                const cushionR = cushionL.clone();
+                cushionR.position.x = 0.77;
+                const bulgeL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 24, 16), matCushion);
+                bulgeL.scale.set(1.3, 0.5, 1.2);
+                bulgeL.position.set(-0.77, 0.78, 0);
+                const bulgeR = bulgeL.clone();
+                bulgeR.position.x = 0.77;
+                const backL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.75, 0.32), matBase);
+                backL.position.set(-0.77, 1.1, -0.6);
+                const backR = backL.clone();
+                backR.position.x = 0.77;
+                const armBodyL = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.5, 20), matBase);
+                armBodyL.rotation.z = Math.PI / 2;
+                armBodyL.position.set(-1.72, 0.62, 0);
+                const armFrontL = new THREE.Mesh(new THREE.SphereGeometry(0.28, 24, 16), matBase);
+                armFrontL.position.set(-1.92, 0.62, 0.45);
+                const armBodyR = armBodyL.clone();
+                armBodyR.position.x = 1.72;
+                const armFrontR = armFrontL.clone();
+                armFrontR.position.x = 1.92;
+                const legPositions = [
+                    [-1.35, 0.1, 0.6], [1.35, 0.1, 0.6],
+                    [-1.35, 0.1, -0.6], [1.35, 0.1, -0.6]
+                ];
+                const legs = legPositions.map(p => {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.22, 12), matWood);
+                    leg.position.set(p[0], p[1], p[2]);
+                    return leg;
+                });
+                const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.35), matCushion);
+                pillow.position.set(0.25, 0.9, 0.25);
+                pillow.rotation.z = -0.2;
+                sofa.add(seatBase, cushionL, cushionR, bulgeL, bulgeR, backL, backR, armBodyL, armFrontL, armBodyR, armFrontR, pillow, ...legs);
+                sofa.position.set(0, 0, 4);
+                sofa.rotation.y = Math.PI;
+                scene.add(sofa);
+                const person = new THREE.Group();
+                person.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 1), new THREE.MeshStandardMaterial({ color: 0x0a0a0a })));
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
+                head.position.y = 0.7;
+                person.add(head);
+                person.position.set(-0.6, 0.9, 4.1);
+                person.rotation.y = Math.PI;
+                scene.add(person);
+                const noiseCanvas = document.createElement('canvas');
+                noiseCanvas.width = 256;
+                noiseCanvas.height = 128;
+                const noiseCtx = noiseCanvas.getContext('2d');
+                const noiseTex = new THREE.CanvasTexture(noiseCanvas);
+                noiseTex.wrapS = THREE.ClampToEdgeWrapping;
+                noiseTex.wrapT = THREE.ClampToEdgeWrapping;
+                noiseTex.minFilter = THREE.NearestFilter;
+                noiseTex.magFilter = THREE.NearestFilter;
+                threeInstance.current = { scene, camera, renderer, tv, noiseCanvas, noiseTex, noiseCtx, staticActive: false };
                 const animate = () => {
                     requestAnimationFrame(animate);
-                    if (camera && (stage === 'ready' || stage === 'loading')) {
-                        camera.position.x += Math.sin(Date.now() * 0.001) * 0.001;
+                    if (threeInstance.current.staticActive && threeInstance.current.noiseCtx) {
+                        const ctx = threeInstance.current.noiseCtx;
+                        const w = threeInstance.current.noiseCanvas.width;
+                        const h = threeInstance.current.noiseCanvas.height;
+                        const imgData = ctx.createImageData(w, h);
+                        for (let i = 0; i < imgData.data.length; i += 4) {
+                            const v = Math.random() * 255;
+                            imgData.data[i] = v;
+                            imgData.data[i + 1] = v;
+                            imgData.data[i + 2] = v;
+                            imgData.data[i + 3] = 255;
+                        }
+                        ctx.putImageData(imgData, 0, 0);
+                        threeInstance.current.noiseTex.needsUpdate = true;
                     }
                     renderer.render(scene, camera);
                 };
                 animate();
-
                 const handleResize = () => {
                     camera.aspect = window.innerWidth / window.innerHeight;
                     camera.updateProjectionMatrix();
@@ -150,35 +211,93 @@
                 return () => window.removeEventListener('resize', handleResize);
             }, []);
 
+            // 監聽辛普森動畫完成事件
             useEffect(() => {
-                const interval = setInterval(() => {
-                    setLoadingProgress(prev => {
-                        if (prev >= 100) {
-                            clearInterval(interval);
-                            setTimeout(() => setStage('ready'), 500);
-                            return 100;
+                const setupStaticCanvas = () => {
+                    const cvs = document.getElementById('static-overlay');
+                    staticCanvasRef.current = cvs;
+                    if (!cvs) return;
+                    const resize = () => {
+                        cvs.width = window.innerWidth;
+                        cvs.height = window.innerHeight;
+                    };
+                    resize();
+                    window.addEventListener('resize', resize);
+                    return () => window.removeEventListener('resize', resize);
+                };
+                const teardownResize = setupStaticCanvas();
+                const startStaticNoise = () => {
+                    const cvs = staticCanvasRef.current;
+                    if (!cvs) return;
+                    const ctx = cvs.getContext('2d');
+                    staticCtxRef.current = ctx;
+                    const draw = () => {
+                        const w = cvs.width, h = cvs.height;
+                        const img = ctx.createImageData(w, h);
+                        const data = img.data;
+                        for (let i = 0; i < data.length; i += 4) {
+                            const v = (Math.random() * 255) | 0;
+                            data[i] = v;
+                            data[i + 1] = v;
+                            data[i + 2] = v;
+                            data[i + 3] = 255;
                         }
-                        return prev + Math.floor(Math.random() * 5) + 2;
-                    });
-                }, 80);
-                return () => clearInterval(interval);
+                        ctx.putImageData(img, 0, 0);
+                        staticAnimRef.current = requestAnimationFrame(draw);
+                    };
+                    draw();
+                };
+                const stopStaticNoise = () => {
+                    if (staticAnimRef.current) {
+                        cancelAnimationFrame(staticAnimRef.current);
+                        staticAnimRef.current = null;
+                    }
+                };
+                const onMessage = (ev) => {
+                    if (ev.data === 'simpson-finished') {
+                        startStaticNoise();
+                        gsap.set("#static-overlay", { opacity: 0, display: 'block' });
+                        gsap.set("#web-content", { opacity: 0 });
+                        const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+                        tl.to("#static-overlay", { opacity: 1, duration: 0.15 }, 0);
+                        tl.call(() => {
+                            setStage('web');
+                            document.body.style.overflow = 'auto';
+                        });
+                        tl.to("#web-content", { opacity: 1, duration: 1.0 }, "<0.05");
+                        tl.to("#simpson-overlay", { opacity: 0, duration: 0.8 }, "<");
+                        tl.to("#static-overlay", { opacity: 0, duration: 0.6 }, ">-0.3");
+                        tl.call(() => {
+                            setWaitingStart(false);
+                            stopStaticNoise();
+                            gsap.set("#static-overlay", { display: 'none' });
+                            gsap.set("#canvas-container", { opacity: 0 });
+                        });
+                    }
+                };
+                window.addEventListener('message', onMessage);
+                return () => {
+                    window.removeEventListener('message', onMessage);
+                    if (teardownResize) teardownResize();
+                };
             }, []);
 
             const start3DSequence = () => {
                 setStage('intro3d');
-                const { camera, tv, remote } = threeInstance.current;
-                const timeline = gsap.timeline();
-
-                timeline.to(remote.position, { y: 1.4, z: 4.3, duration: 1 });
-                timeline.to(tv.getObjectByName('screen').material.color, { r: 1, g: 1, b: 1, duration: 0.1 }, "+=0.2");
-                timeline.to(camera.position, { x: 0, y: 1.5, z: 1.3, duration: 2.5, ease: "expo.inOut" }, "-=0.2");
-                timeline.to("#canvas-container", { 
-                    opacity: 0, 
-                    duration: 0.8, 
-                    onComplete: () => {
-                        setStage('web');
-                        document.body.style.overflow = 'auto';
-                    }
+                const { camera, tv, noiseTex } = threeInstance.current;
+                const timeline = gsap.timeline({ defaults: { ease: "power2.inOut" } });
+                timeline.to({}, { duration: 0.1, onStart: () => {
+                    const screen = tv.getObjectByName('screen');
+                    screen.material = new THREE.MeshBasicMaterial({ color: 0xffffff, map: noiseTex });
+                    threeInstance.current.staticActive = true;
+                }});
+                timeline.to(tv.rotation, { y: 0.03, duration: 0.8 });
+                timeline.to(camera.position, { x: 0, y: 1.5, z: 0.15, duration: 2.0, ease: "power3.in" });
+                timeline.call(() => {
+                    setStage('web');
+                    document.body.style.overflow = 'auto';
+                    threeInstance.current.staticActive = false;
+                    gsap.set("#canvas-container", { opacity: 0 });
                 });
             };
 
@@ -204,9 +323,45 @@
             };
 
             const projects = [
-                { id: 1, title: "AI Assistant", desc: "基於 LLM 的對話系統實作" },
-                { id: 2, title: "Data Dashboard", desc: "實時數據流監控面板" },
-                { id: 3, title: "Vibe Prototype", desc: "快速開發架構展示" },
+                { 
+                    id: 1, 
+                    title: "Ledger - Personal Finance", 
+                    url: "https://david8015838-create.github.io/ledger-app/",
+                    desc: "個人財務管理與信用卡分期追蹤",
+                    features: [
+                        "預算顯示：當月剩餘、已花費、總預算即時視覺化",
+                        "今日消費：顯示現金消費總額與筆數",
+                        "信用卡待繳：分期＋結轉餘額含在本月帳單",
+                        "新增交易：支援多幣種自動換算、分類、自訂備註",
+                        "支付方式：現金即時入帳；信用卡可設定分期與年利率",
+                        "分期計算：自動分配到各期，餘數落在最後一期",
+                        "歷史記錄：月份切換、即時搜尋、日期分組展開、編輯刪除",
+                        "統計分析：圓餅圖比例、分類明細、近6月趨勢圖",
+                        "信用卡管理：結帳日、繳款間隔、初始餘額與還款記錄",
+                        "定期交易：每日/週/月/年四種頻率，到期自動建立"
+                    ]
+                },
+                { 
+                    id: 2, 
+                    title: "StockLens Owen", 
+                    url: "https://david8015838-create.github.io/stock-lens/",
+                    desc: "投資資產追蹤與複利試算工具",
+                    features: [
+                        "快速開始：+ 新增標的，編輯股數/均價/槓桿/債券屬性",
+                        "刪除資產：垃圾桶圖示確認後移除",
+                        "複利計算：每月投入，從第2個月開始計入"
+                    ]
+                },
+                { 
+                    id: 3, 
+                    title: "SplitWise Pro - BY OWEN", 
+                    url: "https://david8015838-create.github.io/splitwise-pro/",
+                    desc: "多人分帳與雲端即時同步",
+                    features: [
+                        "雲端即時同步：輸入房號建立共享空間",
+                        "多人分帳：快速記錄與結算"
+                    ]
+                }
             ];
 
             const experiences = [
@@ -235,36 +390,26 @@
 
             return (
                 <div className="relative">
-                    {/* Stage: Loading Overlay */}
-                    <AnimatePresence>
-                        {(stage === 'loading' || stage === 'ready') && (
-                            <motion.div 
-                                key="loader"
-                                initial={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-black"
-                            >
-                                <div className="w-64 space-y-4 text-center">
-                                    <div className="flex justify-between items-end mb-2">
-                                        <span className="text-[10px] tracking-widest text-zinc-500 uppercase">System Initializing</span>
-                                        <span className="text-xl font-light tabular-nums text-white">{loadingProgress}%</span>
-                                    </div>
-                                    <div className="h-0.5 w-full bg-zinc-800 overflow-hidden relative">
-                                        <motion.div className="absolute inset-y-0 left-0 bg-white" animate={{ width: `${loadingProgress}%` }} />
-                                    </div>
-                                    {stage === 'ready' && (
-                                        <motion.button 
-                                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                            onClick={start3DSequence}
-                                            className="w-full py-4 mt-8 border border-white/20 rounded-full text-[10px] tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all"
-                                        >
-                                            Enter Experience
-                                        </motion.button>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    
+                    {/* Simpsons Intro Overlay */}
+                    {waitingStart && (
+                        <div id="simpson-overlay" className="fixed inset-0 z-[150] flex items-center justify-center bg-black">
+                            <iframe id="simpson-iframe" src="辛普森動畫index.html" className="absolute inset-0 w-full h-full border-0"></iframe>
+                            <div className="relative z-10 text-center">
+                                <button
+                                    onClick={() => {
+                                        const iframe = document.getElementById('simpson-iframe');
+                                        iframe.contentWindow.postMessage('start-simpson', '*');
+                                    }}
+                                    className="px-10 py-6 text-2xl font-light tracking-widest uppercase text-white bg-white/5 border border-white/20 rounded-full hover:bg-white/10 transition"
+                                >
+                                    ready to start！
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <canvas id="static-overlay" className="fixed inset-0 z-[250] opacity-0 pointer-events-none"></canvas>
 
                     {/* Stage: Web Content */}
                     <div id="web-content" className={`relative z-10 transition-opacity duration-1000 ${stage === 'web' ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
@@ -379,7 +524,7 @@
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         {projects.map((p) => (
-                                            <div key={p.id} className="p-10 border border-white/5 rounded-3xl hover:bg-white/[0.02]">
+                                            <div key={p.id} className="p-10 border border-white/5 rounded-3xl hover:bg-white/[0.02] cursor-pointer" onClick={() => setActiveProjectView(p)}>
                                                 <h4 className="text-2xl font-light mb-2 text-white">{p.title}</h4>
                                                 <p className="text-zinc-500 text-sm">{p.desc}</p>
                                             </div>
@@ -401,6 +546,32 @@
                                         <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-500">{(activeExpModal || activeCertModal).tag || (activeExpModal || activeCertModal).category}</span>
                                         <h2 className="text-4xl font-light text-white my-8">{(activeExpModal || activeCertModal).title}</h2>
                                         <p className="text-zinc-400 leading-relaxed">{(activeExpModal || activeCertModal).details || (activeExpModal || activeCertModal).desc}</p>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                        {activeProjectView && (
+                            <motion.div key="proj-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[220] flex items-center justify-center p-6">
+                                <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl" onClick={() => setActiveProjectView(null)} />
+                                <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }} className="relative bg-zinc-900 border border-white/10 max-w-6xl w-full rounded-[2rem] overflow-hidden">
+                                    <div className="flex justify-between items-center px-8 py-6 border-b border-white/10">
+                                        <h3 className="text-2xl font-light text-white">{activeProjectView.title}</h3>
+                                        <button onClick={() => setActiveProjectView(null)} className="text-2xl font-thin">×</button>
+                                    </div>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2">
+                                        <div className="bg-zinc-800">
+                                            <iframe src={activeProjectView.url} className="w-full h-[60vh] lg:h-[70vh] border-0 bg-black" />
+                                        </div>
+                                        <div className="p-8 lg:p-10">
+                                            <h4 className="text-xl font-light text-white mb-4">功能特色</h4>
+                                            <ul className="space-y-2 text-zinc-400 text-sm">
+                                                {activeProjectView.features.map((f, idx) => (
+                                                    <li key={idx}>• {f}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
                                 </motion.div>
                             </motion.div>
