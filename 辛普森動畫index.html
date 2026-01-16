@@ -300,9 +300,10 @@
                     duration: 2.5,
                     ease: "power3.in"
                 }, "<0.2");
-                // 繼續推進直到進入螢幕（帶雜訊的螢幕）
+                // 繼續推進直到進入螢幕（帶雜訊的螢幕）- 電腦版需要更深入
+                const isMobile = window.innerWidth <= 768;
                 tl.to(camera.position, {
-                    z: -1.2,
+                    z: isMobile ? -1.2 : -1.6,
                     duration: 1.0,
                     ease: "power2.in"
                 });
