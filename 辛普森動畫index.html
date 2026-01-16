@@ -168,11 +168,13 @@
                 // --- 馬克杯與煙霧 ---
                 const mugGroup = new THREE.Group();
                 const mugMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 }); // 咖啡色
-                const mugBody = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.3, 16), mugMat);
+                // 增大馬克杯尺寸：從0.15/0.18/0.3增加到0.25/0.28/0.45
+                const mugBody = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.28, 0.45, 16), mugMat);
                 mugBody.position.y = 1.35;
-                const mugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.03, 8, 16), mugMat);
+                // 增大把手尺寸：從0.08/0.03增加到0.12/0.04
+                const mugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 8, 16), mugMat);
                 mugHandle.rotation.z = Math.PI / 2;
-                mugHandle.position.set(0.2, 1.35, 0);
+                mugHandle.position.set(0.3, 1.35, 0);
                 mugGroup.add(mugBody, mugHandle);
                 mugGroup.position.set(-0.5, 0, 2);
                 scene.add(mugGroup);
@@ -187,7 +189,8 @@
                 });
                 for (let i = 0; i < 15; i++) {
                     const smoke = new THREE.Mesh(smokeGeometry, smokeMaterial.clone());
-                    smoke.position.set(-0.5, 1.5 + Math.random() * 0.3, 2);
+                    // 調整煙霧位置以匹配更大的馬克杯：從1.5調整到1.7（馬克杯高度從0.3增加到0.45）
+                    smoke.position.set(-0.5, 1.7 + Math.random() * 0.3, 2);
                     smoke.scale.set(0.5, 0.5, 0.5);
                     smokeParticles.push(smoke);
                     scene.add(smoke);
@@ -228,12 +231,21 @@
                             smoke.material.opacity -= 0.003;
                             
                             if (smoke.position.y > 2.5 || smoke.material.opacity < 0) {
-                                smoke.position.set(-0.5 + (Math.random() - 0.5) * 0.1, 1.5, 2);
+                                smoke.position.set(-0.5 + (Math.random() - 0.5) * 0.1, 1.7, 2);
                                 smoke.scale.set(0.5, 0.5, 0.5);
                                 smoke.material.opacity = 0.6;
                             }
                         });
                     }
+                };
+
+                // 將場景對象存儲到 ref 中，供 triggerZoom 使用
+                sceneRef.current = {
+                    scene,
+                    camera,
+                    screen,
+                    tvLight,
+                    smokeParticles
                 };
 
                 const animate = () => {
@@ -255,13 +267,26 @@
                     renderer.setSize(window.innerWidth, window.innerHeight);
                 };
                 window.addEventListener('resize', handleResize);
-                return () => window.removeEventListener('resize', handleResize);
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    sceneRef.current = null;
+                };
             }, []);
 
             const triggerZoom = () => {
-                if (!sceneRef.current) return;
+                console.log('triggerZoom called, sceneRef.current:', sceneRef.current);
+                if (!sceneRef.current) {
+                    console.error('sceneRef.current is null!');
+                    return;
+                }
                 const { camera, screen, tvLight } = sceneRef.current;
+                if (!camera || !screen || !tvLight) {
+                    console.error('Missing required objects:', { camera, screen, tvLight });
+                    return;
+                }
+                
                 setIsZoomed(true);
+                console.log('Starting zoom animation...');
 
                 const tl = gsap.timeline();
                 // 先讓屏幕變亮（帶雜訊）
@@ -285,6 +310,7 @@
                 tl.to(screen.material.color, { r: 2, g: 2, b: 2, duration: 0.3 }, "<0.3");
                 // 鏡頭完全進入帶雜訊的螢幕時發送完成信號
                 tl.call(() => {
+                    console.log('Sending simpson-finished message');
                     window.parent && window.parent.postMessage('simpson-finished', '*');
                 }, null, ">-0.2");
             };
@@ -298,19 +324,35 @@
                                 className="absolute inset-0 flex flex-col justify-between p-12 pointer-events-none"
                             >
                                 <div className="flex justify-between items-start pointer-events-auto">
-                                    <div className="text-5xl md:text-6xl font-black italic text-[#FFD90F]" style={{
-                                        WebkitTextStroke: '3px #5E3023',
-                                        textShadow: '4px 4px 0px #5E3023, 8px 8px 0px rgba(0,0,0,0.3)',
-                                        transform: 'rotate(-2deg)',
-                                        letterSpacing: '0.1em'
-                                    }}>PORTFOLIO ENTRANCE</div>
-                                    <div className="text-sm md:text-base font-bold tracking-widest text-zinc-300 uppercase bg-black/30 px-4 py-2 rounded-lg">Entering Digital Space</div>
+                                    <div className="relative inline-block">
+                                        <div className="text-5xl md:text-6xl font-black italic text-[#FFD90F]" style={{
+                                            WebkitTextStroke: '3px #5E3023',
+                                            textShadow: '4px 4px 0px #5E3023, 8px 8px 0px rgba(0,0,0,0.3)',
+                                            transform: 'rotate(-2deg)',
+                                            letterSpacing: '0.1em'
+                                        }}>PORTFOLIO ENTRANCE</div>
+                                        <div className="absolute bottom-0 right-0 text-[11px] md:text-[14px] font-black italic text-[#5E3023] uppercase whitespace-nowrap" style={{
+                                            transform: 'rotate(-2deg) translateY(calc(100% + 8px))',
+                                            letterSpacing: '0.2em',
+                                            WebkitTextStroke: '1.0px #5E3023',
+                                            textShadow: '1px 1px 0px rgba(0,0,0,0.3)',
+                                            fontWeight: 900
+                                        }}>
+                                            owen design
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div className="flex flex-col items-center">
                                     <button 
-                                        onClick={triggerZoom}
-                                        className="interactive px-12 py-5 bg-[#FFD90F] text-[#5E3023] font-black rounded-full shadow-[0_8px_0_#5E3023] hover:translate-y-1 hover:shadow-[0_4px_0_#5E3023] transition-all uppercase tracking-widest text-sm"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            console.log('Button clicked!');
+                                            triggerZoom();
+                                        }}
+                                        className="interactive px-12 py-5 bg-[#FFD90F] text-[#5E3023] font-black rounded-full shadow-[0_8px_0_#5E3023] hover:translate-y-1 hover:shadow-[0_4px_0_#5E3023] transition-all uppercase tracking-widest text-sm cursor-pointer z-50"
+                                        style={{ pointerEvents: 'auto' }}
                                     >
                                         ready to start
                                     </button>

@@ -34,7 +34,7 @@
         }
 
         /* 3D 容器 */
-        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; opacity: 0; display: none; }
         
         /* 自定義滑鼠 */
         #cursor-dot {
@@ -107,6 +107,13 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
+            height: 100%;
+        }
+        
+        /* 確保關閉模態框後恢復滾動 */
+        body:not(.modal-open) {
+            overflow: auto;
+            position: relative;
         }
     </style>
 </head>
@@ -307,16 +314,26 @@
                     }
                 };
                 const onMessage = (ev) => {
+                    console.log('Received message:', ev.data);
                     if (ev.data === 'simpson-finished') {
-                        // 直接從雜訊切換到個人網頁，無任何中間動畫
+                        console.log('Directly switching to personal webpage...');
+                        // 直接切換到個人網頁，隱藏所有動畫元素
+                        setWaitingStart(false);
                         setStage('web');
                         document.body.style.overflow = 'auto';
-                        setWaitingStart(false);
-                        // 立即顯示個人網頁，隱藏所有動畫元素
-                        gsap.set("#web-content", { opacity: 1, display: 'block' });
+                        
+                        // 隱藏辛普森動畫和3D場景
                         gsap.set("#simpson-overlay", { display: 'none', opacity: 0 });
-                        gsap.set("#canvas-container", { opacity: 0 });
+                        gsap.set("#canvas-container", { display: 'none', opacity: 0 });
                         gsap.set("#static-overlay", { display: 'none', opacity: 0 });
+                        
+                        // 顯示個人網頁
+                        gsap.set("#web-content", { display: 'block' });
+                        gsap.to("#web-content", { 
+                            opacity: 1, 
+                            duration: 0.8,
+                            ease: "power2.out"
+                        });
                     }
                 };
                 window.addEventListener('message', onMessage);
@@ -327,21 +344,143 @@
             }, []);
 
             const start3DSequence = () => {
+                console.log('start3DSequence called, threeInstance.current:', threeInstance.current);
                 setStage('intro3d');
-                const { camera, tv, noiseTex } = threeInstance.current;
+                const { camera, tv, noiseTex, scene } = threeInstance.current;
+                if (!camera || !tv || !noiseTex || !scene) {
+                    console.error('Missing 3D objects:', { camera, tv, noiseTex, scene });
+                    return;
+                }
+                console.log('Starting 3D animation sequence...');
+                
+                const screen = tv.getObjectByName('screen');
+                if (!screen) return;
+                
+                // 設置屏幕為雜訊材質
+                screen.material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, map: noiseTex });
+                threeInstance.current.staticActive = true;
+                
+                // 添加電視發光效果（點光源）
+                let tvLight = scene.getObjectByName('tvLight');
+                if (!tvLight) {
+                    tvLight = new THREE.PointLight(0xffffff, 0, 10);
+                    tvLight.position.copy(tv.position);
+                    tvLight.position.z += 0.5;
+                    tvLight.name = 'tvLight';
+                    scene.add(tvLight);
+                }
+                
+                // 獲取電視屏幕的中心位置（世界座標）
+                const screenCenter = new THREE.Vector3();
+                screen.getWorldPosition(screenCenter);
+                
+                // 保存初始相機位置和朝向
+                const initialPos = camera.position.clone();
+                const initialLookAt = new THREE.Vector3(-0.8, 1.5, 0.3);
+                
                 const timeline = gsap.timeline({ defaults: { ease: "power2.inOut" } });
-                timeline.to({}, { duration: 0.1, onStart: () => {
-                    const screen = tv.getObjectByName('screen');
-                    screen.material = new THREE.MeshBasicMaterial({ color: 0xffffff, map: noiseTex });
-                    threeInstance.current.staticActive = true;
-                }});
-                timeline.to(tv.rotation, { y: 0.03, duration: 0.8 });
-                timeline.to(camera.position, { x: 0, y: 1.5, z: 0.15, duration: 2.0, ease: "power3.in" });
+                
+                // 階段1: 屏幕開始發光，雜訊變亮
+                timeline.to(screen.material.color, { 
+                    r: 1.0,
+                    g: 1.0,
+                    b: 1.0,
+                    duration: 0.6,
+                    ease: "power2.out"
+                });
+                timeline.to(tvLight, { 
+                    intensity: 3,
+                    duration: 0.6,
+                    ease: "power2.out"
+                }, "<");
+                
+                // 同時讓相機開始朝向屏幕中心
+                timeline.to({}, {
+                    duration: 0.6,
+                    onUpdate: function() {
+                        const progress = this.progress();
+                        const lookAt = new THREE.Vector3().lerpVectors(initialLookAt, screenCenter, progress);
+                        camera.lookAt(lookAt);
+                    }
+                }, "<");
+                
+                // 階段2: 鏡頭開始移動向電視屏幕
+                timeline.to(camera.position, { 
+                    x: screenCenter.x,
+                    y: screenCenter.y,
+                    z: screenCenter.z + 0.8, // 先到屏幕前方
+                    duration: 1.5,
+                    ease: "power2.inOut"
+                }, "<0.3");
+                
+                // 確保相機持續朝向屏幕中心
+                timeline.to({}, {
+                    duration: 1.5,
+                    onUpdate: function() {
+                        camera.lookAt(screenCenter);
+                    }
+                }, "<");
+                
+                // 階段3: 屏幕變得更亮，雜訊更強烈
+                timeline.to(screen.material.color, {
+                    r: 1.5,
+                    g: 1.5,
+                    b: 1.5,
+                    duration: 0.4
+                });
+                timeline.to(tvLight, {
+                    intensity: 8,
+                    duration: 0.4
+                }, "<");
+                
+                // 階段4: 鏡頭鑽入屏幕中心（繼續推進）
+                timeline.to(camera.position, {
+                    x: screenCenter.x,
+                    y: screenCenter.y,
+                    z: screenCenter.z - 0.2, // 鑽入屏幕
+                    duration: 1.2,
+                    ease: "power3.in"
+                }, "<0.2");
+                
+                // 持續朝向屏幕中心
+                timeline.to({}, {
+                    duration: 1.2,
+                    onUpdate: function() {
+                        camera.lookAt(screenCenter);
+                    }
+                }, "<");
+                
+                // 階段5: 屏幕達到最亮，準備切換
+                timeline.to(screen.material.color, {
+                    r: 2.0,
+                    g: 2.0,
+                    b: 2.0,
+                    duration: 0.3
+                });
+                timeline.to(tvLight, {
+                    intensity: 12,
+                    duration: 0.3
+                }, "<");
+                
+                // 階段6: 切換到個人網頁
                 timeline.call(() => {
                     setStage('web');
                     document.body.style.overflow = 'auto';
                     threeInstance.current.staticActive = false;
-                    gsap.set("#canvas-container", { opacity: 0 });
+                    // 淡出3D場景
+                    gsap.to("#canvas-container", { 
+                        opacity: 0, 
+                        duration: 0.5,
+                        onComplete: () => {
+                            gsap.set("#canvas-container", { display: 'none' });
+                        }
+                    });
+                    // 淡入個人網頁
+                    gsap.set("#web-content", { display: 'block' });
+                    gsap.to("#web-content", { 
+                        opacity: 1, 
+                        duration: 0.8 
+                    });
                 });
             };
 
@@ -517,7 +656,7 @@
                         </nav>
 
                         <main className="max-w-7xl mx-auto px-4 md:px-8">
-                            <section className="min-h-screen flex flex-col justify-center pb-8 md:pb-16 pt-20 md:pt-0">
+                            <section className="min-h-[70vh] flex flex-col justify-center pb-8 md:pb-12 pt-20 md:pt-0">
                                 <p className="text-zinc-500 font-mono text-xs mb-8 tracking-[0.4em] uppercase">Vibe Coder / Architect</p>
                                 <h1 className="text-[10vw] md:text-[8vw] font-light tracking-tighter leading-[0.8] mb-4 md:mb-6">
                                     DESIGNING <br />
@@ -534,7 +673,7 @@
                                 {/* 裝飾性元素 */}
                                 <div className="absolute top-8 right-8 w-32 h-32 border border-white/5 rounded-full opacity-20"></div>
                                 <div className="absolute bottom-8 left-8 w-24 h-24 border border-white/5 rounded-full opacity-15"></div>
-                                <div onClick={() => setActiveProjectModal(true)} className="group relative cursor-pointer border border-white/5 rounded-[2rem] overflow-hidden bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-700 mt-16">
+                                <div onClick={() => setActiveProjectModal(true)} className="group relative cursor-pointer border border-white/5 rounded-[2rem] overflow-hidden bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-700 mt-8">
                                     <div className="py-24 px-12 flex flex-col items-center text-center">
                                         <div className="w-16 h-16 border border-zinc-800 rounded-full flex items-center justify-center mb-8 text-2xl font-light text-zinc-500 group-hover:text-white group-hover:border-white/20 transition-all">+</div>
                                         <h2 className="text-5xl font-light tracking-tight mb-4 text-white">Project Matrix</h2>
@@ -624,13 +763,25 @@
                                 className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6"
                                 onAnimationStart={() => document.body.classList.add('modal-open')}
                                 onExitComplete={() => {
-                                    document.body.classList.remove('modal-open');
-                                    setActiveProjectModal(false);
+                                    setTimeout(() => {
+                                        document.body.classList.remove('modal-open');
+                                        document.body.style.overflow = '';
+                                        document.body.style.position = '';
+                                        document.body.style.width = '';
+                                        document.body.style.height = '';
+                                        setActiveProjectModal(false);
+                                    }, 100);
                                 }}
                             >
                                 <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl" onClick={() => {
                                     setActiveProjectModal(false);
-                                    document.body.classList.remove('modal-open');
+                                    setTimeout(() => {
+                                        document.body.classList.remove('modal-open');
+                                        document.body.style.overflow = '';
+                                        document.body.style.position = '';
+                                        document.body.style.width = '';
+                                        document.body.style.height = '';
+                                    }, 100);
                                 }} />
                                 <motion.div 
                                     initial={{ scale: 0.9, opacity: 0 }} 
@@ -643,7 +794,13 @@
                                         <h2 className="text-3xl md:text-5xl font-light text-white">Project Matrix</h2>
                                         <button onClick={() => {
                                             setActiveProjectModal(false);
-                                            document.body.classList.remove('modal-open');
+                                            setTimeout(() => {
+                                                document.body.classList.remove('modal-open');
+                                                document.body.style.overflow = '';
+                                                document.body.style.position = '';
+                                                document.body.style.width = '';
+                                                document.body.style.height = '';
+                                            }, 100);
                                         }} className="text-3xl font-thin hover:text-white transition">×</button>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
@@ -651,6 +808,7 @@
                                             <div key={p.id} className="p-8 md:p-10 border border-white/5 rounded-3xl hover:bg-white/[0.02] cursor-pointer transition-all" onClick={() => {
                                                 setActiveProjectView(p);
                                                 setActiveProjectModal(false);
+                                                // 保持modal-open状态，因为会打开新的modal
                                             }}>
                                                 <h4 className="text-xl md:text-2xl font-light mb-2 text-white">{p.title}</h4>
                                                 <p className="text-zinc-500 text-sm">{p.desc}</p>
@@ -701,7 +859,13 @@
                                 <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl" onClick={() => {
                                     setActiveProjectView(null);
                                     setActiveProjectModal(false);
-                                    document.body.classList.remove('modal-open');
+                                    setTimeout(() => {
+                                        document.body.classList.remove('modal-open');
+                                        document.body.style.overflow = '';
+                                        document.body.style.position = '';
+                                        document.body.style.width = '';
+                                        document.body.style.height = '';
+                                    }, 100);
                                 }} />
                                 <motion.div 
                                     initial={{ y: 40, opacity: 0 }} 
@@ -714,18 +878,55 @@
                                         <button onClick={() => { 
                                             setActiveProjectView(null);
                                             setActiveProjectModal(true);
-                                            document.body.classList.remove('modal-open');
+                                            setTimeout(() => {
+                                                document.body.classList.remove('modal-open');
+                                                document.body.style.overflow = '';
+                                                document.body.style.position = '';
+                                                document.body.style.width = '';
+                                                document.body.style.height = '';
+                                            }, 100);
                                         }} className="text-sm text-zinc-400 hover:text-white transition mr-4">← 返回</button>
                                         <h3 className="text-xl md:text-2xl font-light text-white flex-1 text-center">{activeProjectView.title}</h3>
                                         <button onClick={() => { 
                                             setActiveProjectView(null);
                                             setActiveProjectModal(false);
-                                            document.body.classList.remove('modal-open');
+                                            setTimeout(() => {
+                                                document.body.classList.remove('modal-open');
+                                                document.body.style.overflow = '';
+                                                document.body.style.position = '';
+                                                document.body.style.width = '';
+                                                document.body.style.height = '';
+                                            }, 100);
                                         }} className="text-2xl font-thin hover:text-white transition ml-4">×</button>
                                     </div>
                                     <div className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden min-h-0">
-                                        <div className="bg-zinc-800 overflow-auto flex items-center justify-center min-h-[40vh] lg:min-h-0" style={{ maxHeight: 'calc(95vh - 80px)' }}>
-                                            <iframe src={activeProjectView.url} className="w-full border-0 bg-black" style={{ minHeight: '600px', width: '100%', height: '100%' }} />
+                                        <div className="bg-zinc-800 overflow-hidden min-h-[40vh] lg:min-h-0 relative" style={{ maxHeight: 'calc(95vh - 80px)' }}>
+                                            <div className="absolute inset-0 flex items-center justify-center" style={{ 
+                                                width: '100%',
+                                                height: '100%'
+                                            }}>
+                                                <div style={{
+                                                    width: '166.67%', // 1 / 0.6 = 1.667
+                                                    height: '166.67%',
+                                                    transform: 'scale(0.6)',
+                                                    transformOrigin: 'center center',
+                                                    position: 'relative'
+                                                }}>
+                                                    <iframe 
+                                                        src={activeProjectView.url} 
+                                                        className="border-0 bg-white w-full h-full" 
+                                                        style={{ 
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            minHeight: '100%',
+                                                            pointerEvents: 'auto',
+                                                            display: 'block'
+                                                        }}
+                                                        allow="fullscreen"
+                                                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation allow-pointer-lock"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="p-4 md:p-6 lg:p-8 lg:p-10 overflow-y-auto custom-scrollbar" onWheel={(e) => e.stopPropagation()} style={{ maxHeight: 'calc(95vh - 80px)' }}>
                                             <h4 className="text-lg md:text-xl font-light text-white mb-4">功能特色</h4>
