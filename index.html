@@ -508,18 +508,18 @@
                                     <span className="sm:hidden">Portfolio</span>
                                 </div>
                                 <div className="flex items-center gap-2 md:gap-8 text-[8px] md:text-[10px] tracking-[0.2em] font-medium uppercase text-zinc-500">
-                                    <a href="#projects" className="hidden md:inline">Projects</a>
-                                    <a href="#journey" className="hidden md:inline">Journey</a>
-                                    <a href="#certs" className="hidden md:inline">Certs</a>
+                                    <a href="#projects" className="md:inline">Projects</a>
+                                    <a href="#journey" className="md:inline">Journey</a>
+                                    <a href="#certs" className="md:inline">Certs</a>
                                     <a href="mailto:connect@example.com" className="text-white border border-white/20 px-3 md:px-6 py-1 md:py-2 rounded-full bg-white/5 text-[8px] md:text-[10px]">Connect</a>
                                 </div>
                             </div>
                         </nav>
 
                         <main className="max-w-7xl mx-auto px-4 md:px-8">
-                            <section className="min-h-screen flex flex-col justify-center pb-16 md:pb-32 pt-20 md:pt-0">
+                            <section className="min-h-screen flex flex-col justify-center pb-8 md:pb-16 pt-20 md:pt-0">
                                 <p className="text-zinc-500 font-mono text-xs mb-8 tracking-[0.4em] uppercase">Vibe Coder / Architect</p>
-                                <h1 className="text-[10vw] md:text-[8vw] font-light tracking-tighter leading-[0.8] mb-8 md:mb-12">
+                                <h1 className="text-[10vw] md:text-[8vw] font-light tracking-tighter leading-[0.8] mb-4 md:mb-6">
                                     DESIGNING <br />
                                     <span className="font-serif italic font-normal text-zinc-500 text-[11vw] md:text-[9vw]">Momentum.</span>
                                 </h1>
@@ -648,7 +648,10 @@
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                                         {projects.map((p) => (
-                                            <div key={p.id} className="p-8 md:p-10 border border-white/5 rounded-3xl hover:bg-white/[0.02] cursor-pointer transition-all" onClick={() => setActiveProjectView(p)}>
+                                            <div key={p.id} className="p-8 md:p-10 border border-white/5 rounded-3xl hover:bg-white/[0.02] cursor-pointer transition-all" onClick={() => {
+                                                setActiveProjectView(p);
+                                                setActiveProjectModal(false);
+                                            }}>
                                                 <h4 className="text-xl md:text-2xl font-light mb-2 text-white">{p.title}</h4>
                                                 <p className="text-zinc-500 text-sm">{p.desc}</p>
                                             </div>
@@ -721,8 +724,8 @@
                                         }} className="text-2xl font-thin hover:text-white transition ml-4">×</button>
                                     </div>
                                     <div className="grid grid-cols-1 lg:grid-cols-2 flex-1 overflow-hidden min-h-0">
-                                        <div className="bg-zinc-800 overflow-hidden flex items-center justify-center min-h-[40vh] lg:min-h-0" style={{ maxHeight: 'calc(95vh - 80px)' }}>
-                                            <iframe src={activeProjectView.url} className="w-full h-full min-h-[40vh] lg:min-h-0 border-0 bg-black" style={{ maxHeight: '100%', width: '100%' }} />
+                                        <div className="bg-zinc-800 overflow-auto flex items-center justify-center min-h-[40vh] lg:min-h-0" style={{ maxHeight: 'calc(95vh - 80px)' }}>
+                                            <iframe src={activeProjectView.url} className="w-full border-0 bg-black" style={{ minHeight: '600px', width: '100%', height: '100%' }} />
                                         </div>
                                         <div className="p-4 md:p-6 lg:p-8 lg:p-10 overflow-y-auto custom-scrollbar" onWheel={(e) => e.stopPropagation()} style={{ maxHeight: 'calc(95vh - 80px)' }}>
                                             <h4 className="text-lg md:text-xl font-light text-white mb-4">功能特色</h4>
