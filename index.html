@@ -601,7 +601,7 @@
                 });
             };
             
-            // 觸控板手勢支持（左右滑動）
+            // 觸控板手勢支持（左右滑動）+ 手機觸摸滑動支持
             useEffect(() => {
                 const container = certCardsContainerRef.current;
                 if (!container) return;
@@ -612,6 +612,7 @@
                 const SLIDE_COOLDOWN = 600; // 每次切換後至少等待600ms才能再次切換
                 const TRIGGER_THRESHOLD = 150; // 提高觸發閾值，需要更大的滑動距離
                 
+                // 觸控板手勢處理
                 const handleWheel = (e) => {
                     // 檢測水平滾動（觸控板左右滑動）
                     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
@@ -650,10 +651,79 @@
                     }
                 };
                 
+                // 手機觸摸滑動處理
+                let touchStartX = 0;
+                let touchStartY = 0;
+                let touchMoved = false;
+                const TOUCH_THRESHOLD = 50; // 觸摸滑動閾值（像素）
+                
+                const handleTouchStart = (e) => {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    touchMoved = false;
+                };
+                
+                const handleTouchMove = (e) => {
+                    if (!touchStartX) return;
+                    
+                    const touchCurrentX = e.touches[0].clientX;
+                    const touchCurrentY = e.touches[0].clientY;
+                    const deltaX = touchCurrentX - touchStartX;
+                    const deltaY = touchCurrentY - touchStartY;
+                    
+                    // 檢測水平滑動（水平移動大於垂直移動）
+                    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+                        touchMoved = true;
+                        e.preventDefault(); // 防止頁面滾動
+                    }
+                };
+                
+                const handleTouchEnd = (e) => {
+                    if (!touchStartX || !touchMoved) {
+                        touchStartX = 0;
+                        return;
+                    }
+                    
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const deltaX = touchEndX - touchStartX;
+                    
+                    const now = Date.now();
+                    
+                    // 節流：檢查是否在冷卻期內
+                    if (now - lastSlideTime < SLIDE_COOLDOWN) {
+                        touchStartX = 0;
+                        return;
+                    }
+                    
+                    // 如果滑動距離超過閾值，觸發切換
+                    if (Math.abs(deltaX) > TOUCH_THRESHOLD) {
+                        setCertPageIndex(prev => {
+                            const total = certificateGroups.flatMap(group => group.items).length;
+                            if (deltaX > 0) {
+                                // 向右滑動 = 上一張
+                                return prev === 0 ? total - 1 : prev - 1;
+                            } else {
+                                // 向左滑動 = 下一張
+                                return prev === total - 1 ? 0 : prev + 1;
+                            }
+                        });
+                        lastSlideTime = now;
+                    }
+                    
+                    touchStartX = 0;
+                    touchMoved = false;
+                };
+                
                 container.addEventListener('wheel', handleWheel, { passive: false });
+                container.addEventListener('touchstart', handleTouchStart, { passive: true });
+                container.addEventListener('touchmove', handleTouchMove, { passive: false });
+                container.addEventListener('touchend', handleTouchEnd, { passive: true });
                 
                 return () => {
                     container.removeEventListener('wheel', handleWheel);
+                    container.removeEventListener('touchstart', handleTouchStart);
+                    container.removeEventListener('touchmove', handleTouchMove);
+                    container.removeEventListener('touchend', handleTouchEnd);
                     if (wheelTimeout) clearTimeout(wheelTimeout);
                 };
             }, [certificateGroups]);
