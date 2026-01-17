@@ -1181,11 +1181,13 @@
                     duration: 0.4
                 }, "<");
                 
-                // 階段4: 鏡頭鑽入屏幕中心（繼續推進）
+                // 階段4: 鏡頭鑽入屏幕中心（繼續推進）- 電腦版需要更深入
+                const isMobile = window.innerWidth <= 768;
+                const finalZ = isMobile ? screenCenter.z - 0.2 : screenCenter.z - 0.6; // 電腦版鑽得更深
                 timeline.to(camera.position, {
                     x: screenCenter.x,
                     y: screenCenter.y,
-                    z: screenCenter.z - 0.2, // 鑽入屏幕
+                    z: finalZ, // 鑽入屏幕
                     duration: 1.2,
                     ease: "power3.in"
                 }, "<0.2");
