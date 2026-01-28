@@ -1289,10 +1289,12 @@
                 
                 // 階段4: 鏡頭鑽入屏幕中心（繼續推進）- 電腦版需要更深入，完全鑽進去看不到邊框
                 const isMobile = window.innerWidth <= 768;
-                const finalZ = isMobile ? screenCenter.z - 0.2 : screenCenter.z - 1.2; // 電腦版鑽得更深，完全進入屏幕內部
+                // 增加鑽入深度：手機版從 -0.2 增加到 -0.5，電腦版從 -1.2 增加到 -2.5
+                // 同時調整 X 和 Y 偏移，確保鏡頭正對屏幕中心
+                const finalZ = isMobile ? screenCenter.z - 0.5 : screenCenter.z - 2.5; 
                 timeline.to(camera.position, {
-                    x: screenCenter.x,
-                    y: screenCenter.y,
+                    x: screenCenter.x - 0.1, // 微調 X 軸偏移，對準屏幕中心
+                    y: screenCenter.y + 0.05, // 微調 Y 軸偏移
                     z: finalZ, // 鑽入屏幕，完全進入內部
                     duration: 1.5,
                     ease: "power3.in"
