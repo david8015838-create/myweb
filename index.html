@@ -745,7 +745,7 @@
                     } else {
                         clearInterval(interval);
                     }
-                }, 50); // 每個字50ms，比之前的100ms快
+                }, 10); // 每個字10ms，更快速顯示
                 
                 return () => clearInterval(interval);
             }, [journeyInView]);
@@ -1146,8 +1146,8 @@
                                     gsap.set("#web-content", { display: 'block' });
                                     gsap.to("#web-content", { 
                                         opacity: 1, 
-                                        duration: 0.4,
-                                        ease: "power2.out"
+                                        duration: 0.1,
+                                        ease: "none"
                                     });
                                 }
                             });
@@ -1307,7 +1307,7 @@
                     gsap.set("#web-content", { display: 'block' });
                     gsap.to("#web-content", { 
                         opacity: 1, 
-                        duration: 0.8 
+                        duration: 0.1 
                     });
                 });
             };
@@ -2516,8 +2516,7 @@
                                                         filter: 'brightness(0.5)'
                                                     }}
                                                     transition={{ 
-                                                        duration: 0.8, 
-                                                        delay: index * 0.15,
+                                                        duration: 0.3, 
                                                         ease: [0.25, 0.1, 0.25, 1]
                                                     }}
                                                     className="group relative py-4 md:py-6 transition-all duration-500 md:pl-12 cursor-pointer active:opacity-80 active:scale-[0.98]"
@@ -2534,7 +2533,7 @@
                                                         className="relative"
                                                         initial={{ opacity: 0 }}
                                                         animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                                                        transition={{ duration: 0.6, delay: index * 0.15 + 0.3 }}
+                                                        transition={{ duration: 0.3 }}
                                                     >
                                                 <div className="flex flex-col md:flex-row items-start gap-6">
                                                             <div 
@@ -2562,7 +2561,7 @@
                                                                     className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase px-2 py-1 border border-zinc-800 rounded inline-block"
                                                                     initial={{ opacity: 0, scale: 0.8 }}
                                                                     animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                                                                    transition={{ duration: 0.4, delay: index * 0.15 + 0.4 }}
+                                                                    transition={{ duration: 0.3 }}
                                                                 >
                                                                     {exp.tag}
                                                                 </motion.span>
@@ -2570,7 +2569,7 @@
                                                                     className="text-3xl font-light group-hover/exp:translate-x-2 transition-all duration-300 text-white pr-8 hover:scale-110 hover:font-semibold"
                                                                     initial={{ opacity: 0, x: -20, scale: 1 }}
                                                                     animate={isInView ? { opacity: 1, x: 0, scale: 1.1 } : { opacity: 0, x: -20, scale: 1 }}
-                                                                    transition={{ duration: 0.6, delay: index * 0.15 + 0.5 }}
+                                                                    transition={{ duration: 0.3 }}
                                                                     style={{
                                                                         color: isInView ? '#ffffff' : '#71717a'
                                                                     }}
@@ -2581,7 +2580,7 @@
                                                                     className="text-zinc-500 max-w-lg leading-relaxed group-hover/exp:text-zinc-400 transition-colors duration-500"
                                                                     initial={{ opacity: 0 }}
                                                                     animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                                                                    transition={{ duration: 0.6, delay: index * 0.15 + 0.6 }}
+                                                                    transition={{ duration: 0.3 }}
                                                                     style={{
                                                                         color: isInView ? '#71717a' : '#3f3f46'
                                                                     }}
@@ -2629,7 +2628,7 @@
                                                                 className="mt-8 md:mt-12 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent"
                                                                 initial={{ scaleX: 0 }}
                                                                 animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
-                                                                transition={{ duration: 0.6, delay: index * 0.15 + 0.8 }}
+                                                                transition={{ duration: 0.3 }}
                                                             ></motion.div>
                                                         )}
                                                     </motion.div>
@@ -2651,7 +2650,7 @@
                                             <motion.div
                                                 initial={{ opacity: 0, y: 50 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.6 }}
+                                        transition={{ duration: 0.3 }}
                                         className="relative group"
                                     >
                                         <div className="relative">
@@ -2854,10 +2853,10 @@
                                     }, 100);
                                 }} />
                                 <motion.div 
-                                    initial={{ scale: 0.9, opacity: 0, y: 20 }} 
-                                    animate={{ scale: 1, opacity: 1, y: 0 }} 
-                                    exit={{ scale: 0.9, opacity: 0, y: 20 }} 
-                                    transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                                        initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+                                        animate={{ scale: 1, opacity: 1, y: 0 }} 
+                                        exit={{ scale: 0.9, opacity: 0, y: 20 }} 
+                                        transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                                     className="relative max-w-[95vw] lg:max-w-4xl w-full max-h-[90vh] bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 border border-white/10 rounded-[2.5rem] p-6 md:p-12 lg:p-16 overflow-y-auto custom-scrollbar backdrop-blur-xl shadow-2xl"
                                     style={{
                                         position: 'relative',
@@ -2897,7 +2896,7 @@
                                                         key={idx}
                                                         initial={{ opacity: 0, x: -20 }}
                                                         animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ duration: 0.4, delay: idx * 0.05 }}
+                                                        transition={{ duration: 0.3 }}
                                                         className="text-zinc-400 text-sm md:text-base flex items-start gap-3"
                                                     >
                                                         <span className="text-white/30 mt-1">•</span>
@@ -2968,7 +2967,7 @@
                                     initial={{ scale: 0.9, opacity: 0, y: 20 }} 
                                     animate={{ scale: 1, opacity: 1, y: 0 }} 
                                     exit={{ scale: 0.9, opacity: 0, y: 20 }} 
-                                    transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                                    transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                                     className="relative max-w-[95vw] lg:max-w-6xl w-full max-h-[90vh] bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 border border-white/10 rounded-[2.5rem] p-6 md:p-12 lg:p-20 overflow-y-auto custom-scrollbar backdrop-blur-xl shadow-2xl"
                                     style={{
                                         position: 'relative',
@@ -3010,7 +3009,7 @@
                                                 key={p.id} 
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                                                transition={{ duration: 0.3 }}
                                                 className="group p-8 md:p-10 border border-white/5 rounded-3xl hover:bg-white/[0.02] cursor-pointer transition-all relative overflow-hidden backdrop-blur-sm active:scale-[0.98]"
                                                 style={{
                                                     position: 'relative',
@@ -3134,7 +3133,7 @@
                                                         key={idx}
                                                         initial={{ opacity: 0, scale: 0.9 }}
                                                         animate={{ opacity: 1, scale: 1 }}
-                                                        transition={{ delay: idx * 0.1, duration: 0.3 }}
+                                                        transition={{ duration: 0.3 }}
                                                         src={img} 
                                                         className="w-full object-contain rounded-xl"
                                                         style={{ 
@@ -3149,7 +3148,7 @@
                                         <motion.img 
                                             initial={{ opacity: 0, scale: 0.9 }}
                                             animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ duration: 0.4 }}
+                                            transition={{ duration: 0.3 }}
                                             src={(activeExpModal?.selectedImage || activeExpModal?.image || activeCertModal?.image)} 
                                             className="w-full h-full object-contain z-10"
                                             style={{ 
@@ -3192,7 +3191,7 @@
                                         <motion.span 
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.2 }}
+                                            transition={{ duration: 0.3 }}
                                             className="inline-block text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-400 mb-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm"
                                         >
                                             {(activeExpModal || activeCertModal).tag || (activeExpModal || activeCertModal).category}
@@ -3202,7 +3201,7 @@
                                         <motion.h2 
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: 0.3 }}
+                                            transition={{ duration: 0.3 }}
                                             className="text-4xl md:text-5xl font-light text-white my-4 leading-tight"
                                             style={{
                                                 textShadow: '0 2px 20px rgba(255, 255, 255, 0.1)'
@@ -3216,7 +3215,7 @@
                                             <motion.p 
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.4 }}
+                                                transition={{ duration: 0.3 }}
                                                 className="text-xl font-light text-zinc-300 mb-6"
                                                 style={{
                                                     textShadow: '0 1px 10px rgba(0, 0, 0, 0.5)'
@@ -3230,7 +3229,7 @@
                                         <motion.p 
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: 0.5 }}
+                                            transition={{ duration: 0.3 }}
                                             className="text-zinc-300 leading-relaxed whitespace-pre-line text-base md:text-lg"
                                             style={{
                                                 textShadow: '0 1px 10px rgba(0, 0, 0, 0.3)'
