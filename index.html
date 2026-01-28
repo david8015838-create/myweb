@@ -562,6 +562,394 @@
         const { useState, useEffect, useRef, useCallback } = React;
         const { motion, AnimatePresence, useScroll, useSpring, useInView } = window.Motion;
 
+        // 靜態資源與數據定義
+        const IMAGES = {
+            google: "google project management.JPG",
+            googleDataAnalytics: "google data analytics.JPG",
+            cia: "CIA獨立公開英文演講.JPG",
+            cia2: "cia演講2.jpg",
+            tamkang: "淡江畢業證書.JPG",
+            n8n: "n8n.JPG",
+            finance: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2511&auto=format&fit=crop",
+            toeic: "多益JPG.JPG",
+            cebu: "Cebu internantional academy畢業證書.jpg",
+            trust: "信託業務專業.JPG",
+            bankControl: "銀行內部控制與內部稽核.JPG",
+            credit: "初階授信人員.JPG",
+            // 證照官方icon
+            iconGoogle: "google project management.JPG", // 如果Google有專門的icon文件，請替換此處
+            iconTrust: "信託.jpg",
+            iconBank: "銀行、授信.webp",
+            iconToeic: "多益.webp",
+            iconCia: "cia.jpg",
+            iconThreads: "threads.png",
+            profilePhoto: "IMG_7839.jpg"
+        };
+
+        const projects = [
+            { 
+                id: 1, 
+                title: "Ledger", 
+                url: "https://david8015838-create.github.io/ledger-app/",
+                desc: "個人財務管理與信用卡分期追蹤",
+                demoData: {
+                    // 預設預算
+                    budget: {
+                        total: 50000,
+                        currentMonth: new Date().getMonth() + 1,
+                        currentYear: new Date().getFullYear()
+                    },
+                    // 預設交易記錄（涵蓋各種情況）
+                    transactions: [
+                        // 現金交易
+                        { id: 't1', date: '2024-01-05', amount: 150, currency: 'TWD', category: '飲食', note: '早餐 - 麥當勞', paymentMethod: 'cash' },
+                        { id: 't2', date: '2024-01-05', amount: 80, currency: 'TWD', category: '交通', note: '捷運', paymentMethod: 'cash' },
+                        { id: 't3', date: '2024-01-06', amount: 350, currency: 'TWD', category: '飲食', note: '午餐 - 日式料理', paymentMethod: 'cash' },
+                        { id: 't4', date: '2024-01-07', amount: 1200, currency: 'TWD', category: '交通', note: '計程車費', paymentMethod: 'cash' },
+                        { id: 't5', date: '2024-01-08', amount: 2500, currency: 'TWD', category: '購物', note: 'Uniqlo 衣服', paymentMethod: 'cash' },
+                        { id: 't6', date: '2024-01-10', amount: 180, currency: 'TWD', category: '飲食', note: '星巴克咖啡', paymentMethod: 'cash' },
+                        { id: 't7', date: '2024-01-12', amount: 800, currency: 'TWD', category: '娛樂', note: '電影票', paymentMethod: 'cash' },
+                        { id: 't8', date: '2024-01-15', amount: 450, currency: 'TWD', category: '飲食', note: '晚餐 - 火鍋', paymentMethod: 'cash' },
+                        { id: 't9', date: '2024-01-18', amount: 1200, currency: 'TWD', category: '醫療', note: '看診費', paymentMethod: 'cash' },
+                        { id: 't10', date: '2024-01-20', amount: 3000, currency: 'TWD', category: '購物', note: '3C 產品', paymentMethod: 'cash' },
+                        // 信用卡交易 - 無分期
+                        { id: 't11', date: '2024-01-03', amount: 5000, currency: 'TWD', category: '購物', note: '網購 - 家電', paymentMethod: 'credit', creditCardId: 'cc1', installments: 1, interestRate: 0 },
+                        { id: 't12', date: '2024-01-09', amount: 2800, currency: 'TWD', category: '娛樂', note: 'KTV 包廂', paymentMethod: 'credit', creditCardId: 'cc1', installments: 1, interestRate: 0 },
+                        { id: 't13', date: '2024-01-14', amount: 1500, currency: 'TWD', category: '飲食', note: '高級餐廳', paymentMethod: 'credit', creditCardId: 'cc1', installments: 1, interestRate: 0 },
+                        // 信用卡交易 - 有分期
+                        { id: 't14', date: '2024-01-02', amount: 15000, currency: 'TWD', category: '購物', note: 'iPhone 15 Pro', paymentMethod: 'credit', creditCardId: 'cc1', installments: 12, interestRate: 6.5 },
+                        { id: 't15', date: '2024-01-11', amount: 8000, currency: 'TWD', category: '購物', note: '筆電', paymentMethod: 'credit', creditCardId: 'cc1', installments: 6, interestRate: 5.5 },
+                        { id: 't16', date: '2024-01-16', amount: 12000, currency: 'TWD', category: '購物', note: '家具', paymentMethod: 'credit', creditCardId: 'cc1', installments: 24, interestRate: 8.0 },
+                        // 多幣種交易
+                        { id: 't17', date: '2024-01-04', amount: 50, currency: 'USD', category: '購物', note: 'Amazon 購物', paymentMethod: 'credit', creditCardId: 'cc2', installments: 1, interestRate: 0 },
+                        { id: 't18', date: '2024-01-13', amount: 100, currency: 'USD', category: '娛樂', note: 'Netflix 訂閱', paymentMethod: 'credit', creditCardId: 'cc2', installments: 1, interestRate: 0 },
+                        { id: 't19', date: '2024-01-19', amount: 200, currency: 'JPY', category: '飲食', note: '日本餐廳', paymentMethod: 'cash' },
+                        // 上個月的交易
+                        { id: 't20', date: '2023-12-25', amount: 5000, currency: 'TWD', category: '購物', note: '聖誕禮物', paymentMethod: 'credit', creditCardId: 'cc1', installments: 3, interestRate: 4.5 },
+                        { id: 't21', date: '2023-12-20', amount: 3000, currency: 'TWD', category: '娛樂', note: '跨年活動', paymentMethod: 'cash' },
+                        { id: 't22', date: '2023-12-15', amount: 8000, currency: 'TWD', category: '購物', note: '年終購物', paymentMethod: 'credit', creditCardId: 'cc1', installments: 1, interestRate: 0 }
+                    ],
+                    // 預設信用卡
+                    creditCards: [
+                        {
+                            id: 'cc1',
+                            name: '花旗現金回饋卡',
+                            dueDate: 15,
+                            paymentInterval: 30,
+                            limit: 150000,
+                            currency: 'TWD'
+                        },
+                        {
+                            id: 'cc2',
+                            name: '台新 FlyGo 卡',
+                            dueDate: 10,
+                            paymentInterval: 30,
+                            limit: 100000,
+                            currency: 'USD'
+                        }
+                    ],
+                    // 預設固定支出
+                    recurringTransactions: [
+                        { id: 'r1', name: '房租', amount: 15000, currency: 'TWD', category: '居住', frequency: 'monthly', date: 1, paymentMethod: 'cash' },
+                        { id: 'r2', name: '電話費', amount: 699, currency: 'TWD', category: '通訊', frequency: 'monthly', date: 20, paymentMethod: 'credit', creditCardId: 'cc1' }
+                    ]
+                },
+                features: [
+                    "分期追蹤：直觀管理信用卡分期付款，自動計算每期應付金額與剩餘期數",
+                    "多幣種支援：支援全球主流貨幣，即時匯率轉換，適合海外消費記錄",
+                    "視覺化圖表：動態儀表板呈現收支比例與支出趨勢，助您快速掌握財務狀況",
+                    "預算管理：設定每月預算上限，並即時監控剩餘額度，有效控制支出",
+                    "固定支出提醒：自動記錄房租、訂閱服務等重複性支出，不再遺漏帳單",
+                    "資料本地存儲：採用 IndexedDB 技術，資料加密儲存於本地瀏覽器，確保私隱與速度",
+                    "響應式介面：完美適配手機與桌面瀏覽器，隨時隨地輕鬆記帳"
+                ]
+            },
+            { 
+                id: 2, 
+                title: "StockLens", 
+                url: "https://david8015838-create.github.io/StockLens/",
+                desc: "台美股資產視覺化與複利計算器",
+                demoData: {
+                    // 預設資產數據
+                    assets: [
+                        { id: 'a1', type: 'stock', name: '台積電 (2330)', amount: 600000, currency: 'TWD', color: '#2563eb' },
+                        { id: 'a2', type: 'stock', name: 'Apple (AAPL)', amount: 450000, currency: 'TWD', color: '#7c3aed' },
+                        { id: 'a3', type: 'stock', name: 'NVIDIA (NVDA)', amount: 300000, currency: 'TWD', color: '#059669' },
+                        { id: 'a4', type: 'cash', name: '現金 (TWD)', amount: 150000, currency: 'TWD', color: '#d97706' },
+                        { id: 'a5', type: 'cash', name: '現金 (USD)', amount: 100000, currency: 'TWD', color: '#dc2626' }
+                    ],
+                    // 預設複利參數
+                    compoundInterest: {
+                        principal: 1000000,
+                        monthlyContribution: 20000,
+                        annualRate: 8,
+                        years: 20
+                    }
+                },
+                features: [
+                    "資產配置視覺化：使用 D3.js 繪製動態圓餅圖，清晰展示台美股各資產佔比",
+                    "複利計算模擬：預測未來財富增長軌跡，支援月供款與年化報酬率動態調整",
+                    "多維度分析：按資產類型、幣別、市場進行分類統計，洞察投資組合風險",
+                    "即時數據更新：整合市場 API，自動獲取最新股價資訊，精準估算資產淨值",
+                    "深色模式優先：專為投資者設計的深色護眼介面，提供專業、專注的使用環境",
+                    "PWA 安裝支援：將應用程序安裝至案頭或手機，體驗流暢、無延遲的資產追蹤",
+                    "極速加載：優化渲染邏輯，即使資產項目繁多，也能保持秒開體驗"
+                ]
+            },
+            { 
+                id: 3, 
+                title: "SplitWise Pro", 
+                url: "https://david8015838-create.github.io/splitwise-pro/",
+                desc: "多人即時分帳與雲端同步系統",
+                demoData: {
+                    roomId: 'DEMO-888',
+                    roomName: '東京 5 天 4 夜自由行',
+                    // 預設成員
+                    members: [
+                        { id: 'm1', name: 'Owen (Me)', avatar: 'O' },
+                        { id: 'm2', name: 'Alice', avatar: 'A' },
+                        { id: 'm3', name: 'Bob', avatar: 'B' },
+                        { id: 'm4', name: 'Charlie', avatar: 'C' },
+                        { id: 'm5', name: 'David', avatar: 'D' }
+                    ],
+                    // 預設支出記錄
+                    expenses: [
+                        { 
+                            id: 'e1', 
+                            payer: 'm1', 
+                            amount: 15000, 
+                            description: '機票代訂', 
+                            date: '2024-01-01', 
+                            splitType: 'equal', 
+                            participants: ['m1', 'm2', 'm3', 'm4', 'm5'],
+                            category: '交通'
+                        },
+                        { 
+                            id: 'e2', 
+                            payer: 'm2', 
+                            amount: 12000, 
+                            description: '飯店住宿 (4晚)', 
+                            date: '2024-01-02', 
+                            splitType: 'equal', 
+                            participants: ['m1', 'm2', 'm3', 'm4', 'm5'],
+                            category: '居住'
+                        },
+                        { 
+                            id: 'e3', 
+                            payer: 'm3', 
+                            amount: 2500, 
+                            description: '敘敘苑燒肉 (晚餐)', 
+                            date: '2024-01-03', 
+                            splitType: 'equal', 
+                            participants: ['m1', 'm2', 'm3', 'm4', 'm5'],
+                            category: '飲食'
+                        },
+                        { 
+                            id: 'e4', 
+                            payer: 'm4', 
+                            amount: 1800, 
+                            description: '迪士尼門票', 
+                            date: '2024-01-04', 
+                            splitType: 'equal', 
+                            participants: ['m1', 'm2', 'm3', 'm4', 'm5'],
+                            category: '娛樂'
+                        },
+                        { 
+                            id: 'e5', 
+                            payer: 'm5', 
+                            amount: 1200, 
+                            description: '藥妝店代購', 
+                            date: '2024-01-05', 
+                            splitType: 'custom', 
+                            participants: [
+                                { id: 'm1', amount: 500 },
+                                { id: 'm2', amount: 700 }
+                            ],
+                            category: '購物'
+                        },
+                        // 更多交易
+                        {
+                            id: 'e6',
+                            payer: 'm1',
+                            amount: 3000,
+                            description: '成田特快 (往返)',
+                            date: '2024-01-01',
+                            splitType: 'equal',
+                            participants: ['m1', 'm2', 'm3', 'm4', 'm5'],
+                            category: '交通'
+                        },
+                        {
+                            id: 'e7',
+                            payer: 'm2',
+                            amount: 500,
+                            description: '便利商店零食',
+                            date: '2024-01-02',
+                            splitType: 'equal',
+                            participants: ['m1', 'm2', 'm3'],
+                            category: '飲食'
+                        },
+                        {
+                            id: 'e8',
+                            payer: 'm3',
+                            amount: 4500,
+                            description: '晴空塔午餐',
+                            date: '2024-01-03',
+                            splitType: 'equal',
+                            participants: ['m1', 'm2', 'm3', 'm4', 'm5'],
+                            category: '飲食'
+                        },
+                        {
+                            id: 'e9',
+                            payer: 'm4',
+                            amount: 600,
+                            description: '地鐵三日券',
+                            date: '2024-01-01',
+                            splitType: 'equal',
+                            participants: ['m1', 'm2', 'm4', 'm5'],
+                            category: '交通'
+                        },
+                        {
+                            id: 'e10',
+                            payer: 'm5',
+                            amount: 2200,
+                            description: '一蘭拉麵',
+                            date: '2024-01-04',
+                            splitType: 'equal',
+                            participants: ['m1', 'm2', 'm3', 'm4', 'm5'],
+                            category: '飲食'
+                        },
+                        // 更多複雜情況
+                        {
+                            id: 'e11',
+                            payer: 'm1',
+                            amount: 8000,
+                            description: '租車費用',
+                            date: '2024-01-08',
+                            splitType: 'custom',
+                            participants: [
+                                { id: 'm1', amount: 3000 },
+                                { id: 'm2', amount: 2000 },
+                                { id: 'm3', amount: 1500 },
+                                { id: 'm4', amount: 1500 }
+                            ],
+                            category: '交通'
+                        },
+                        {
+                            id: 'e12',
+                            payer: 'm2',
+                            amount: 3500,
+                            description: '紀念品',
+                            date: '2024-01-22',
+                            splitType: 'equal',
+                            participants: ['m1', 'm2', 'm3', 'm4', 'm5'],
+                            category: '購物'
+                        }
+                    ],
+                    // 預設結算記錄
+                    settlements: [
+                        {
+                            id: 's1',
+                            from: 'm2',
+                            to: 'm1',
+                            amount: 450,
+                            date: '2024-01-16',
+                            description: '結算部分帳務'
+                        },
+                        {
+                            id: 's2',
+                            from: 'm3',
+                            to: 'm1',
+                            amount: 300,
+                            date: '2024-01-18',
+                            description: '結算部分帳務'
+                        }
+                    ]
+                },
+                features: [
+                    "雲端同步：輸入房間號碼即可建立共享空間，所有成員即時看到最新帳務狀態",
+                    "多人分帳：支援任意人數的群組分帳，可設定不同成員的分攤比例",
+                    "多種分帳模式：平均分攤、按比例分攤、自訂金額分攤，滿足各種情境需求",
+                    "帳務記錄：詳細記錄每筆支出的發起人、參與人、金額與備註",
+                    "結算功能：自動計算每位成員應付/應收金額，清楚顯示誰欠誰多少錢",
+                    "即時更新：任何成員新增或修改帳務，其他成員立即看到更新，無需手動刷新",
+                    "歷史查詢：保留完整的分帳歷史記錄，可隨時查看過往帳務明細",
+                    "簡潔介面：直觀的操作介面，快速上手，適合日常使用"
+                ]
+            },
+            { 
+                id: 4, 
+                title: "SurveyLight", 
+                url: "https://david8015838-create.github.io/SurveyLight/",
+                desc: "極致輕量與高效互動的問卷調查平台",
+                demoData: {
+                    surveys: [
+                        { id: 's1', title: '使用者滿意度調查', responses: 45, status: 'active' },
+                        { id: 's2', title: '活動報名表', responses: 120, status: 'closed' }
+                    ]
+                },
+                features: [
+                    "全能儀表板：一站式監控問卷狀態，支援數據分析、模擬預覽與副本複製",
+                    "智能編輯器：支援簡答、單/多選、線性分級及檔案上傳，可設定截止時間與人數上限",
+                    "沈浸模式 (Focus Mode)：提供簡約深色介面，搭配動態進度條與平滑翻頁，提升填答率",
+                    "即時反饋：內建必填檢查，填答完成觸發 Canvas Confetti 彩帶特效",
+                    "戰情室模式 (War Room)：黑客風格視覺化數據分析，適合大螢幕實時監控",
+                    "實時數據同步：基於 Firebase Firestore 技術，無需整理頁面即可看到最新回覆",
+                    "PWA 支援：可安裝至手機或桌面，提供類原生應用的使用體驗",
+                    "響應式設計：採用 Tailwind CSS 構建，完美適配行動裝置、平板與桌機"
+                ]
+            },
+            { 
+                id: 5, 
+                title: "Nexus Mind", 
+                url: "https://david8015838-create.github.io/nexus-mind/",
+                desc: "深度社交個人關係管理系統 (PRM)",
+                demoData: {
+                    memories: [
+                        { id: 'm1', content: '與團隊討論新功能開發', date: '2024-01-20' },
+                        { id: 'm2', content: '記錄關於 AI 發展的個人見解', date: '2024-01-22' }
+                    ]
+                },
+                features: [
+                    "社交情報鏈：時間軸管理聯絡動態，具備智慧行程提醒與社交冷卻機制",
+                    "關係圖譜視覺化：使用力導向圖技術將人際網絡視覺化，支援自定義分類過濾",
+                    "聯覺搜尋：多維度檢索姓名、公司、標籤或記憶碎片，並標註匹配原因",
+                    "智慧名片辨識：整合 Tesseract.js OCR 技術，精準識別中英文混合名片資訊",
+                    "個人數位名片：快速產生專屬 QR Code 與美觀的公開展示頁面",
+                    "雲端同步：Firebase 整合確保多設備即時同步，並具備本地優先儲存設計",
+                    "現代化 UI：基於 Tailwind CSS 的磨砂玻璃質感 (Glassmorphism) 與動態漸層",
+                    "流暢體驗：React 狀態管理搭配 Framer Motion 動畫，提供類原生 App 手感"
+                ]
+            }
+        ];
+
+        const experiences = [
+            { id: "tamkang", title: "Tamkang University", subtitle: "Department of International Business, Bachelor of International Business", tag: "Education", summary: "深研國際市場分析與商業策略思維。", details: "在淡江大學期間，專注於國際市場趨勢分析、跨國企業策略規劃以及數據導向的商業邏輯。", image: IMAGES.tamkang, images: [IMAGES.tamkang] },
+            { id: "cia", title: "Cebu International Academy", subtitle: "ESL, Business English - 獨立公開英文演講", tag: "Public Speaking", summary: "於菲律賓期間完成獨立公開專題演講。", details: "修習 ESL 與 Business English 課程，並挑戰完成了一場面向大眾的獨立英文演講，磨練了高壓下的表達力。", image: IMAGES.cia, images: [IMAGES.cia, IMAGES.cia2] },
+            { id: "google", title: "Google Career Certificate", subtitle: "Project Management & Data Analytics", tag: "Professional", summary: "取得 Google 官方 Project Management 與 Data Analytics 認證。", details: "掌握敏捷開發 (Agile) 與 Scrum 框架，以及數據分析與視覺化技能。", image: IMAGES.google, images: [IMAGES.google, IMAGES.googleDataAnalytics] },
+            { id: "n8n", title: "n8n Automation", subtitle: "Workflow Architect", tag: "Technical Skill", summary: "簡化工作流、提高效率的解決方案。", details: "1.自動搜集：每天早上 7 點，它會跑去你指定的 5 個 AI 網站抓最新消息。\n\n2.挑選重點：它會過濾掉舊聞，只挑出當天最熱門的 10 則新聞。\n\n3.AI 分析：把這些新聞交給 Gemini AI 幫你寫成「產業分析」和「商務英文筆記」。\n\n4.發送到家：最後自動寄出兩封 Gmail 到你信箱，讓你不用點開網頁，喝咖啡時就能讀完今日科技精華。", image: IMAGES.n8n, images: [IMAGES.n8n] }
+        ];
+
+        const certificateGroups = [
+            { category: "GOOGLE 專業證照", items: [
+                { id: "goo-1", title: "Project Management", issuer: "Google", image: IMAGES.google, desc: "專案規劃與風險管理。", icon: "google" },
+                { id: "goo-2", title: "Data Analytics", issuer: "Google", image: IMAGES.googleDataAnalytics, desc: "數據分析與視覺化實務。", icon: "google" }
+            ]},
+            { category: "金融專業資格", items: [
+                { id: "fin-3", title: "信託業務專業", issuer: "信託業商業同業公會", image: IMAGES.trust, desc: "信託業務實務與法規。", icon: "trust" },
+                { id: "fin-4", title: "銀行內部控制與內部稽核", issuer: "銀行公會", image: IMAGES.bankControl, desc: "銀行內控制度與稽核實務。", icon: "bank" },
+                { id: "fin-5", title: "初階授信人員", issuer: "銀行公會", image: IMAGES.credit, desc: "授信業務基礎實務。", icon: "bank" }
+            ]},
+            { category: "國際語言能力", items: [
+                { id: "lang-1", title: "TOEIC 多益英語測驗", issuer: "ETS", image: IMAGES.toeic, desc: "870(gold)", badge: "gold", icon: "ets" },
+                { id: "lang-2", title: "Cebu International Academy", issuer: "CIA", image: IMAGES.cebu, desc: "菲律賓語言學校畢業證書。", needsRotation: true, icon: "cia" }
+            ]}
+        ];
+
+        // 合併所有證照到一個數組
+        const allCertificates = certificateGroups.flatMap(group => 
+            group.items.map(cert => ({ ...cert, category: group.category }))
+        );
+
         const App = () => {
             const [stage, setStage] = useState('intro3d');
             const [waitingStart, setWaitingStart] = useState(true); // 初始狀態：等待辛普森動畫
@@ -582,7 +970,9 @@
             // 證照卡牌輪播相關狀態
             const [certPageIndex, setCertPageIndex] = useState(0);
             const [imagesLoaded, setImagesLoaded] = useState(false);
+            const [criticalImagesLoaded, setCriticalImagesLoaded] = useState(false);
             const imagesLoadedRef = useRef(false);
+            const criticalImagesLoadedRef = useRef(false);
             const certCardsContainerRef = useRef(null);
 
             // 圖片預載入函數
@@ -592,18 +982,52 @@
                 const certImages = allCertificates.map(c => c.image).filter(Boolean);
                 const staticImages = Object.values(IMAGES);
                 
-                const allUrls = [...new Set([...projectImages, ...expImages, ...certImages, ...staticImages])];
+                // 定義關鍵圖片（首屏必備，如大頭照和第一個項目的圖片）
+                const criticalUrls = [
+                    IMAGES.profilePhoto,
+                    IMAGES.iconThreads,
+                    // 如果有特定項目的封面圖是首屏可見的，也可以加入
+                ].filter(Boolean);
                 
-                const loadPromises = allUrls.map(url => {
+                const allUrls = [...new Set([...projectImages, ...expImages, ...certImages, ...staticImages])];
+                const otherUrls = allUrls.filter(url => !criticalUrls.includes(url));
+                
+                // 1. 先加載關鍵圖片
+                const criticalPromises = criticalUrls.map(url => {
                     return new Promise((resolve) => {
                         const img = new Image();
                         img.src = url;
                         img.onload = resolve;
-                        img.onerror = resolve; // 即使出錯也繼續，避免卡死
+                        img.onerror = resolve;
                     });
                 });
+                
+                await Promise.all(criticalPromises);
+                setCriticalImagesLoaded(true);
+                criticalImagesLoadedRef.current = true;
+                console.log('Critical images preloaded');
 
-                await Promise.all(loadPromises);
+                // 2. 背景加載其餘圖片，每 3 個一組，避免佔用過多帶寬
+                const chunkArray = (arr, size) => {
+                    const result = [];
+                    for (let i = 0; i < arr.length; i += size) {
+                        result.push(arr.slice(i, i + size));
+                    }
+                    return result;
+                };
+
+                const otherChunks = chunkArray(otherUrls, 3);
+                for (const chunk of otherChunks) {
+                    await Promise.all(chunk.map(url => {
+                        return new Promise((resolve) => {
+                            const img = new Image();
+                            img.src = url;
+                            img.onload = resolve;
+                            img.onerror = resolve;
+                        });
+                    }));
+                }
+
                 setImagesLoaded(true);
                 imagesLoadedRef.current = true;
                 console.log('All images preloaded');
@@ -1162,9 +1586,9 @@
                             // 等待一下再切換到個人網頁，並確保圖片已載入
                             await new Promise(resolve => setTimeout(resolve, 500));
                             
-                            // 額外等待圖片載入完成（最多再等 2 秒）
+                            // 額外等待關鍵圖片載入完成（最多再等 2 秒）
                             let waitCount = 0;
-                            while (!imagesLoadedRef.current && waitCount < 20) {
+                            while (!criticalImagesLoadedRef.current && waitCount < 20) {
                                 await new Promise(resolve => setTimeout(resolve, 100));
                                 waitCount++;
                             }
@@ -2211,6 +2635,15 @@
                                     0%, 50% { opacity: 1; }
                                     51%, 100% { opacity: 0; }
                                 }
+                                .img-loading {
+                                    opacity: 0;
+                                    filter: blur(5px);
+                                }
+                                .img-loaded {
+                                    opacity: 1;
+                                    filter: blur(0);
+                                    transition: opacity 0.8s ease-out, filter 0.8s ease-out;
+                                }
                             `}</style>
                         </div>
                     )}
@@ -2366,7 +2799,7 @@
                                         <img 
                                             src={IMAGES.profilePhoto} 
                                             alt="Profile" 
-                                            className={`relative w-full h-full object-contain shadow-[0_8px_32px_rgba(0,0,0,0.3)] grayscale hover:grayscale-0 transition-all duration-700 ${imagesLoaded ? 'opacity-70' : 'opacity-0'}`} 
+                                            className={`relative w-full h-full object-contain shadow-[0_8px_32px_rgba(0,0,0,0.3)] grayscale hover:grayscale-0 transition-all duration-700 ${criticalImagesLoaded ? 'opacity-70' : 'opacity-0'}`} 
                                             style={{
                                                 filter: 'brightness(1.0) contrast(1.2)'
                                             }}
@@ -2639,14 +3072,16 @@
                                                             <div key={idx} onClick={(e) => {
                                                                 handleClickEffect(e);
                                                                 setActiveExpModal({...exp, selectedImage: img});
-                                                            }} className={`cursor-pointer active:scale-95 transition-all duration-500 ${imagesLoaded ? 'opacity-100' : 'opacity-0 scale-95'}`}>
+                                                            }} className={`cursor-pointer active:scale-95 transition-all duration-500 opacity-100`}>
                                                                 <img 
                                                                     src={img} 
                                                                     alt={exp.title}
-                                                                    className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-lg grayscale hover:grayscale-0 transition-all duration-300 border border-white/10"
+                                                                    loading="lazy"
+                                                                    onLoad={(e) => e.target.classList.add('img-loaded')}
+                                                                    className="img-loading w-20 h-20 md:w-24 md:h-24 object-cover rounded-lg grayscale hover:grayscale-0 transition-all duration-300 border border-white/10"
                                                                             style={{
                                                                                 filter: 'brightness(0.6) grayscale(100%)',
-                                                                                transition: 'filter 0.3s ease'
+                                                                                transition: 'filter 0.3s ease, opacity 0.8s ease-out'
                                                                             }}
                                                                             onMouseEnter={(e) => {
                                                                                 e.target.style.filter = 'brightness(0.8) grayscale(0%)';
@@ -2759,13 +3194,15 @@
                                                                     }
                                                                 }}
                                                             >
-                                                                <div className={`cert-card-content transition-all duration-700 ${imagesLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+                                                                <div className={`cert-card-content transition-all duration-700 ${criticalImagesLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
                                                                     {cert.image && (
                                                                         <img 
-                                                                            src={cert.image} 
-                                                                            alt={cert.title}
-                                                                            className={`cert-card-image ${cert.needsRotation ? 'rotate-left-90' : ''}`}
-                                                                        />
+                                                            src={cert.image} 
+                                                            alt={cert.title}
+                                                            loading="lazy"
+                                                            onLoad={(e) => e.target.classList.add('img-loaded')}
+                                                            className={`img-loading cert-card-image ${cert.needsRotation ? 'rotate-left-90' : ''}`}
+                                                        />
                                                                     )}
                                                                     <div className="cert-card-info">
                                                                         <h3 className="cert-card-title">{cert.title}</h3>
@@ -3170,10 +3607,12 @@
                                                     <motion.img 
                                                         key={idx}
                                                         initial={{ opacity: 0, scale: 0.9 }}
-                                                        animate={{ opacity: imagesLoaded ? 1 : 0, scale: imagesLoaded ? 1 : 0.9 }}
-                                                        transition={{ duration: 0.3 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        transition={{ duration: 0.5 }}
                                                         src={img} 
-                                                        className="w-full object-contain rounded-xl"
+                                                        className="img-loading w-full object-contain rounded-xl"
+                                                        loading="lazy"
+                                                        onLoad={(e) => e.target.classList.add('img-loaded')}
                                                         style={{ 
                                                             maxHeight: activeExpModal.images.length > 1 ? 'calc(50% - 8px)' : '100%',
                                                             filter: 'drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5))',
@@ -3185,13 +3624,15 @@
                                         ) : (
                                         <motion.img 
                                             initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: imagesLoaded ? 1 : 0, scale: imagesLoaded ? 1 : 0.9 }}
-                                            transition={{ duration: 0.3 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ duration: 0.5 }}
                                             src={(activeExpModal?.selectedImage || activeExpModal?.image || activeCertModal?.image)} 
-                                            className="w-full h-full object-contain z-10"
+                                            className="img-loading w-full h-full object-contain z-10"
+                                            loading="lazy"
+                                            onLoad={(e) => e.target.classList.add('img-loaded')}
                                             style={{ 
                                                 transform: (activeCertModal?.needsRotation) ? 'rotate(-90deg)' : 'none',
-                                                transition: 'transform 0.3s',
+                                                transition: 'transform 0.3s, opacity 0.8s ease-out, filter 0.8s ease-out',
                                                 filter: 'drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5))',
                                                 boxShadow: '0 0 40px rgba(255, 255, 255, 0.1)'
                                             }}
