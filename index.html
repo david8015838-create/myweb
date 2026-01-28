@@ -559,7 +559,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
         const { motion, AnimatePresence, useScroll, useSpring, useInView } = window.Motion;
 
         const App = () => {
@@ -581,7 +581,33 @@
             
             // 證照卡牌輪播相關狀態
             const [certPageIndex, setCertPageIndex] = useState(0);
+            const [imagesLoaded, setImagesLoaded] = useState(false);
+            const imagesLoadedRef = useRef(false);
             const certCardsContainerRef = useRef(null);
+
+            // 圖片預載入函數
+            const preloadImages = useCallback(async () => {
+                const projectImages = projects.flatMap(p => p.images || []);
+                const expImages = experiences.flatMap(e => e.images || []);
+                const certImages = allCertificates.map(c => c.image).filter(Boolean);
+                const staticImages = Object.values(IMAGES);
+                
+                const allUrls = [...new Set([...projectImages, ...expImages, ...certImages, ...staticImages])];
+                
+                const loadPromises = allUrls.map(url => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.src = url;
+                        img.onload = resolve;
+                        img.onerror = resolve; // 即使出錯也繼續，避免卡死
+                    });
+                });
+
+                await Promise.all(loadPromises);
+                setImagesLoaded(true);
+                imagesLoadedRef.current = true;
+                console.log('All images preloaded');
+            }, []);
             
             // 經歷描述的打字機效果
             const journeyInView = useInView(journeyDescriptionRef, { once: false, amount: 0.1 });
@@ -1051,6 +1077,9 @@
 
             // 監聽辛普森動畫完成事件
             useEffect(() => {
+                // 開始預載入圖片
+                preloadImages();
+
                 const setupStaticCanvas = () => {
                     const cvs = document.getElementById('static-overlay');
                     staticCanvasRef.current = cvs;
@@ -1130,8 +1159,15 @@
                             await new Promise(resolve => setTimeout(resolve, 250));
                             // 第二行：WELCOME TO MY PORTFOLIO
                             await typewriterEffect('WELCOME TO MY PORTFOLIO', setTypewriterText2, 0);
-                            // 等待一下再切換到個人網頁
+                            // 等待一下再切換到個人網頁，並確保圖片已載入
                             await new Promise(resolve => setTimeout(resolve, 500));
+                            
+                            // 額外等待圖片載入完成（最多再等 2 秒）
+                            let waitCount = 0;
+                            while (!imagesLoadedRef.current && waitCount < 20) {
+                                await new Promise(resolve => setTimeout(resolve, 100));
+                                waitCount++;
+                            }
                             
                             // 淡出打字機效果
                             gsap.to("#typewriter-overlay", {
@@ -2328,7 +2364,7 @@
                                         <img 
                                             src={IMAGES.profilePhoto} 
                                             alt="Profile" 
-                                            className="relative w-full h-full object-contain shadow-[0_8px_32px_rgba(0,0,0,0.3)] grayscale hover:grayscale-0 transition-all duration-500" 
+                                            className={`relative w-full h-full object-contain shadow-[0_8px_32px_rgba(0,0,0,0.3)] grayscale hover:grayscale-0 transition-all duration-700 ${imagesLoaded ? 'opacity-70' : 'opacity-0'}`} 
                                             style={{
                                                 filter: 'brightness(1.0) contrast(1.2)'
                                             }}
@@ -2601,7 +2637,7 @@
                                                             <div key={idx} onClick={(e) => {
                                                                 handleClickEffect(e);
                                                                 setActiveExpModal({...exp, selectedImage: img});
-                                                            }} className="cursor-pointer active:scale-95 transition-transform">
+                                                            }} className={`cursor-pointer active:scale-95 transition-all duration-500 ${imagesLoaded ? 'opacity-100' : 'opacity-0 scale-95'}`}>
                                                                 <img 
                                                                     src={img} 
                                                                     alt={exp.title}
@@ -2721,7 +2757,7 @@
                                                                     }
                                                                 }}
                                                             >
-                                                                <div className="cert-card-content">
+                                                                <div className={`cert-card-content transition-all duration-700 ${imagesLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
                                                                     {cert.image && (
                                                                         <img 
                                                                             src={cert.image} 
@@ -3132,7 +3168,7 @@
                                                     <motion.img 
                                                         key={idx}
                                                         initial={{ opacity: 0, scale: 0.9 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        animate={{ opacity: imagesLoaded ? 1 : 0, scale: imagesLoaded ? 1 : 0.9 }}
                                                         transition={{ duration: 0.3 }}
                                                         src={img} 
                                                         className="w-full object-contain rounded-xl"
@@ -3147,7 +3183,7 @@
                                         ) : (
                                         <motion.img 
                                             initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
+                                            animate={{ opacity: imagesLoaded ? 1 : 0, scale: imagesLoaded ? 1 : 0.9 }}
                                             transition={{ duration: 0.3 }}
                                             src={(activeExpModal?.selectedImage || activeExpModal?.image || activeCertModal?.image)} 
                                             className="w-full h-full object-contain z-10"
