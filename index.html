@@ -967,11 +967,29 @@
             const journeySectionRef = useRef(null);
             const iframeRef = useRef(null);
             
+            // 處理 iframe 加載超時
+            useEffect(() => {
+                let timer;
+                if (activeProjectView) {
+                    setIframeLoading(true);
+                    setIframeError(false);
+                    // 如果 6 秒內沒有加載完成，顯示錯誤提示（通常是 X-Frame-Options 攔截）
+                    timer = setTimeout(() => {
+                        if (iframeLoading) {
+                            setIframeError(true);
+                            setIframeLoading(false);
+                        }
+                    }, 6000);
+                }
+                return () => clearTimeout(timer);
+            }, [activeProjectView]);
+
             // 證照卡牌輪播相關狀態
             const [certPageIndex, setCertPageIndex] = useState(0);
             const [imagesLoaded, setImagesLoaded] = useState(false);
             const [criticalImagesLoaded, setCriticalImagesLoaded] = useState(false);
             const [iframeError, setIframeError] = useState(false);
+            const [iframeLoading, setIframeLoading] = useState(false);
             const imagesLoadedRef = useRef(false);
             const criticalImagesLoadedRef = useRef(false);
             const certCardsContainerRef = useRef(null);
@@ -2636,7 +2654,21 @@
                                     0%, 50% { opacity: 1; }
                                     51%, 100% { opacity: 0; }
                                 }
-                                .img-loading {
+                                @keyframes pulse-slow {
+                 0%, 100% { opacity: 1; transform: scale(1); }
+                 50% { opacity: 0.8; transform: scale(1.02); }
+             }
+             @keyframes bounce-slow {
+                 0%, 100% { transform: translateY(0); }
+                 50% { transform: translateY(-10px); }
+             }
+             .animate-pulse-slow {
+                 animation: pulse-slow 3s infinite ease-in-out;
+             }
+             .animate-bounce-slow {
+                 animation: bounce-slow 2s infinite ease-in-out;
+             }
+             .img-loading {
                                     opacity: 0;
                                     filter: blur(5px);
                                 }
@@ -3391,6 +3423,7 @@
                                                     // 然后直接打开小程序视图
                                                     setTimeout(() => {
                                                         setIframeError(false); // 重置錯誤狀態
+                                                        setIframeLoading(true); // 設置加載狀態
                                                         setActiveProjectView(activeProjectInfo);
                                                         document.body.classList.remove('modal-open');
                                                         document.body.style.overflow = '';
@@ -3775,10 +3808,10 @@
                                                 handleClickEffect(e);
                                                 window.open(activeProjectView.url, '_blank');
                                             }}
-                                            className="px-4 py-2.5 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-400/30 rounded-xl text-blue-100 text-sm font-medium transition-all duration-300 hover:scale-105 backdrop-blur-md shadow-lg cursor-pointer active:scale-95 flex items-center gap-2"
+                                            className="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 border border-blue-400/50 rounded-xl text-white text-sm font-bold transition-all duration-300 hover:scale-105 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.5)] cursor-pointer active:scale-95 flex items-center gap-2 animate-pulse-slow"
                                             title="在新分頁開啟"
                                         >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                             </svg>
                                             外部開啟
@@ -3789,8 +3822,10 @@
                                             onClick={(e) => {
                                                 handleClickEffect(e);
                                                 // 返回 Project Matrix 页面
-                                            setActiveProjectView(null);
-                                            setActiveProjectModal(true);
+                                                setActiveProjectView(null);
+                                                setIframeError(false);
+                                                setIframeLoading(false);
+                                                setActiveProjectModal(true);
                                                 setTimeout(() => {
                                             document.body.classList.remove('modal-open');
                                                     document.body.style.overflow = '';
@@ -3835,42 +3870,56 @@
                                                             height: '100%',
                                                             minHeight: '100%',
                                                             pointerEvents: 'auto',
-                                                            display: iframeError ? 'none' : 'block'
+                                                            display: (iframeError || iframeLoading) ? 'none' : 'block'
                                                         }}
                                                         allow="fullscreen"
                                                         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation allow-pointer-lock"
                                                         onLoad={() => {
-                                                            try {
-                                                                // 嘗試訪問 iframe 內容來檢測是否加載成功
-                                                                // 注意：跨域時這會拋出錯誤，但在某些情況下可以幫助檢測
-                                                                const timer = setTimeout(() => {
-                                                                    setIframeError(false);
-                                                                }, 1000);
-                                                            } catch (e) {
-                                                                console.warn("Iframe cross-origin check:", e);
-                                                            }
+                                                            setIframeLoading(false);
+                                                            setIframeError(false);
                                                         }}
-                                                        onError={() => setIframeError(true)}
+                                                        onError={() => {
+                                                            setIframeLoading(false);
+                                                            setIframeError(true);
+                                                        }}
                                                     />
                                                     
+                                                    {/* Iframe 加載中 UI */}
+                                                    {iframeLoading && !iframeError && (
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/50 backdrop-blur-md">
+                                                            <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+                                                            <p className="text-zinc-400 animate-pulse">正在嘗試建立安全連線...</p>
+                                                        </div>
+                                                    )}
+
                                                     {/* Iframe 錯誤回退 UI */}
                                                     {iframeError && (
-                                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 text-center p-8">
-                                                            <div className="w-20 h-20 mb-6 text-zinc-600">
-                                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/90 backdrop-blur-xl text-center p-8 md:p-12">
+                                                            <div className="w-24 h-24 mb-8 text-blue-500 bg-blue-500/10 rounded-full flex items-center justify-center animate-bounce-slow">
+                                                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                                                 </svg>
                                                             </div>
-                                                            <h3 className="text-xl font-medium text-white mb-4">無法在此處顯示該網站</h3>
-                                                            <p className="text-zinc-400 mb-8 max-w-md">
-                                                                由於安全政策（X-Frame-Options），該網站拒絕在框架中顯示。請點擊右上角的「外部開啟」按鈕直接訪問。
-                                                            </p>
-                                                            <button 
-                                                                onClick={() => window.open(activeProjectView.url, '_blank')}
-                                                                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all font-medium"
-                                                            >
-                                                                立即外部開啟
-                                                            </button>
+                                                            <h3 className="text-2xl md:text-3xl font-bold text-white mb-6">由於安全限制，無法在此直接顯示</h3>
+                                                            <div className="max-w-xl bg-white/5 border border-white/10 rounded-2xl p-6 mb-10 text-left">
+                                                                <p className="text-zinc-300 mb-4 leading-relaxed">
+                                                                    <span className="text-blue-400 font-bold">原因：</span>該網站（StockLens）設置了嚴格的安全政策 (X-Frame-Options)，禁止在其他網站的框架內嵌入。這是為了保護您的數據安全。
+                                                                </p>
+                                                                <p className="text-zinc-400 text-sm leading-relaxed">
+                                                                    <span className="text-zinc-200 font-bold">解決方案：</span>請點擊下方按鈕或右上角的「外部開啟」，我們將在安全的新視窗中為您打開項目。
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex flex-col md:flex-row gap-4">
+                                                                <button 
+                                                                    onClick={() => window.open(activeProjectView.url, '_blank')}
+                                                                    className="px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all font-bold text-lg shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
+                                                                >
+                                                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                    </svg>
+                                                                    立即在新分頁開啟項目
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     )}
                                         </div>
