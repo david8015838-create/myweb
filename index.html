@@ -973,13 +973,18 @@
                 if (activeProjectView) {
                     setIframeLoading(true);
                     setIframeError(false);
-                    // 如果 6 秒內沒有加載完成，顯示錯誤提示（通常是 X-Frame-Options 攔截）
+                    
+                    // StockLens (id: 2) 部署在 Vercel，通常會有 X-Frame-Options 限制，所以設定較短超時
+                    // 其他項目部署在 GitHub Pages，應該可以正常顯示，給予較長加載時間
+                    const isStockLens = activeProjectView.id === 2;
+                    const timeoutDuration = isStockLens ? 6000 : 30000;
+
                     timer = setTimeout(() => {
-                        if (iframeLoading) {
+                        if (iframeLoadingRef.current) {
                             setIframeError(true);
                             setIframeLoading(false);
                         }
-                    }, 6000);
+                    }, timeoutDuration);
                 }
                 return () => clearTimeout(timer);
             }, [activeProjectView]);
@@ -990,6 +995,13 @@
             const [criticalImagesLoaded, setCriticalImagesLoaded] = useState(false);
             const [iframeError, setIframeError] = useState(false);
             const [iframeLoading, setIframeLoading] = useState(false);
+            const iframeLoadingRef = useRef(false);
+
+            // 同步 iframeLoading 到 ref
+            useEffect(() => {
+                iframeLoadingRef.current = iframeLoading;
+            }, [iframeLoading]);
+
             const imagesLoadedRef = useRef(false);
             const criticalImagesLoadedRef = useRef(false);
             const certCardsContainerRef = useRef(null);
@@ -3903,7 +3915,7 @@
                                                             <h3 className="text-2xl md:text-3xl font-bold text-white mb-6">由於安全限制，無法在此直接顯示</h3>
                                                             <div className="max-w-xl bg-white/5 border border-white/10 rounded-2xl p-6 mb-10 text-left">
                                                                 <p className="text-zinc-300 mb-4 leading-relaxed">
-                                                                    <span className="text-blue-400 font-bold">原因：</span>該網站（StockLens）設置了嚴格的安全政策 (X-Frame-Options)，禁止在其他網站的框架內嵌入。這是為了保護您的數據安全。
+                                                                    <span className="text-blue-400 font-bold">原因：</span>該網站（{activeProjectView.title}）設置了嚴格的安全政策 (X-Frame-Options)，禁止在其他網站的框架內嵌入。這是為了保護您的數據安全。
                                                                 </p>
                                                                 <p className="text-zinc-400 text-sm leading-relaxed">
                                                                     <span className="text-zinc-200 font-bold">解決方案：</span>請點擊下方按鈕或右上角的「外部開啟」，我們將在安全的新視窗中為您打開項目。
