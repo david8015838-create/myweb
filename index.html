@@ -1525,9 +1525,10 @@
                 noiseTex.wrapT = THREE.ClampToEdgeWrapping;
                 noiseTex.minFilter = THREE.NearestFilter;
                 noiseTex.magFilter = THREE.NearestFilter;
-                threeInstance.current = { scene, camera, renderer, tv, noiseCanvas, noiseTex, noiseCtx, staticActive: false };
+                threeInstance.current = { scene, camera, renderer, tv, noiseCanvas, noiseTex, noiseCtx, staticActive: false, running: true, rafId: null };
                 const animate = () => {
-                    requestAnimationFrame(animate);
+                    if (!threeInstance.current.running) return;
+                    threeInstance.current.rafId = requestAnimationFrame(animate);
                     if (threeInstance.current.staticActive && threeInstance.current.noiseCtx) {
                         const ctx = threeInstance.current.noiseCtx;
                         const w = threeInstance.current.noiseCanvas.width;
@@ -1552,7 +1553,13 @@
                     renderer.setSize(window.innerWidth, window.innerHeight);
                 };
                 window.addEventListener('resize', handleResize);
-                return () => window.removeEventListener('resize', handleResize);
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    // 停止 Three.js 動畫迴圈並釋放 GPU 資源
+                    threeInstance.current.running = false;
+                    if (threeInstance.current.rafId) cancelAnimationFrame(threeInstance.current.rafId);
+                    renderer.dispose();
+                };
             }, []);
 
             // 監聽辛普森動畫完成事件
@@ -1656,7 +1663,12 @@
                                 ease: "power2.in",
                                 onComplete: () => {
                                     setShowTypewriter(false);
-                                    // 切換到個人網頁
+                                    // 切換到個人網頁，停止 Three.js 動畫迴圈釋放 GPU
+                                    if (threeInstance.current.running) {
+                                        threeInstance.current.running = false;
+                                        if (threeInstance.current.rafId) cancelAnimationFrame(threeInstance.current.rafId);
+                                        if (threeInstance.current.renderer) threeInstance.current.renderer.dispose();
+                                    }
                                     setStage('web');
                                     document.body.style.overflow = 'auto';
                                     gsap.set("#web-content", { display: 'block' });
@@ -1831,14 +1843,26 @@
             };
 
             // 優化後的點擊特效處理函數（性能優化）
+            const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+
             const handleClickEffect = (e) => {
                 const element = e.currentTarget;
                 if (!element) return;
-                
+
                 // 防止快速重複點擊
                 if (element.dataset.animating === 'true') return;
                 element.dataset.animating = 'true';
-                
+
+                // 手機上只做簡單縮放，跳過粒子和波紋（減少 DOM 操作）
+                if (isTouchDevice) {
+                    element.classList.add('click-effect');
+                    setTimeout(() => {
+                        element.classList.remove('click-effect');
+                        element.dataset.animating = 'false';
+                    }, 400);
+                    return;
+                }
+
                 // 使用requestAnimationFrame優化
                 requestAnimationFrame(() => {
                     // 添加點擊動畫類（簡單高效）
